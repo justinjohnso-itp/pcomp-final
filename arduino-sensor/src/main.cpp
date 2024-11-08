@@ -16,24 +16,15 @@ void setup() {
 
 // Function to measure the distance using the ultrasonic sensor
 int measureDistance(int trigPin, int echoPin) {
-  // Take the trigger pin low to start a pulse:
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  // Take the trigger pin high:
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  // Take the trigger pin low again to complete the pulse:
-  digitalWrite(trigPin, LOW);
+  // Pulse the trigger pin
+  digitalWrite(trigPin, LOW); // Pin low (start pulse)
+  digitalWrite(trigPin, HIGH); // Pin high (end pulse)
 
-  // Listen for a pulse on the echo pin:
-  long duration = pulseIn(echoPin, HIGH);
-
-  // Calculate the distance in cm.
-  int distance = (duration * 0.0343) / 2;
-
-  // Limit the distance to the range between 0 and 47 cm
-  if (distance > 47) {
-    distance = 47;
+  long duration = pulseIn(echoPin, HIGH); // Listen for a pulse on the echo pin
+  int distance = (duration * 0.0343) / 2; // Calculate the distance in cm.
+  // Limit the distance to the range between 0 and 30 cm
+  if (distance > 30) {
+    distance = 30;
   } else if (distance < 0) {
     distance = 0;
   }
