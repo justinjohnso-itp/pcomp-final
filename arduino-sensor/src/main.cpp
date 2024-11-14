@@ -1,6 +1,5 @@
 #include <Ewma.h>
 #include <EwmaT.h>
-
 #include <Arduino.h>
 #include <BLEMidi.h> // https://github.com/max22-/ESP32-BLE-MIDI
 
