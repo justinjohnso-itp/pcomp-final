@@ -1,18 +1,44 @@
 #include <Arduino.h>
 
-// put function declarations here:
-int myFunction(int, int);
+const int trigPin1 = 0;
+const int echoPin1 = 1;
+const int trigPin2 = 2;
+const int echoPin2 = 3;
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);
+
+  Serial.begin(9600);
+}
+
+// Function to measure the distance using the ultrasonic sensor
+int measureDistance(int trigPin, int echoPin) {
+  // Pulse the trigger pin
+  digitalWrite(trigPin, LOW); // Pin low (start pulse)
+  digitalWrite(trigPin, HIGH); // Pin high (end pulse)
+
+  long duration = pulseIn(echoPin, HIGH); // Listen for a pulse on the echo pin
+  int distance = (duration * 0.0343) / 2; // Calculate the distance in cm.
+  // Limit the distance to the range between 0 and 30 cm
+  if (distance > 30) {
+    distance = 30;
+  } else if (distance < 0) {
+    distance = 0;
+  }
+
+  return distance;
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
+  // Measure distance for all sensors
+  int distance1 = measureDistance(trigPin1, echoPin1);
+  int distance2 = measureDistance(trigPin2, echoPin2);
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  Serial.print(distance1);
+  Serial.print(", ");
+  Serial.println(distance2);
+  // Serial.print(digitalRead(trigPin1), digitalRead(echoPin1));
 }
