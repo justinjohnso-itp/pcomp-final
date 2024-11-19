@@ -1,45 +1,67 @@
-// Import necessary elements
-import * as THREE from "three";
+import {
+  Scene,
+  PerspectiveCamera,
+  WebGLRenderer,
+  Color,
+  TorusKnotGeometry,
+  SphereGeometry,
+} from "three";
+import { AudioListener, Audio, AudioLoader, AudioAnalyser, Clock } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { createSculptureWithGeometry } from "shader-park-core";
-import { spCode } from "./spCode.js"; // Assuming spCode.js contains your Shader Park code
+import { createSculpture, createSculptureWithGeometry } from "shader-park-core";
+import { spCode } from "./spCode.js";
 
-// Create scene, camera, renderer
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
+let scene = new Scene();
+let state = { time: 0 };
+
+let camera = new PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
   0.1,
   1000
 );
-camera.position.z = 5.5;
+camera.position.z = 1.5;
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  transparent: true,
-});
+let renderer = new WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+renderer.setClearColor(new Color(1, 1, 1), 1);
 document.body.appendChild(renderer.domElement);
 
-// Orbit controls
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+let clock = new Clock();
 
-// // Create geometry and apply Shader Park
-const geometry = new THREE.SphereGeometry(2, 45, 45);
-const mesh = createSculptureWithGeometry(geometry, spCode, () => ({
-  time: 0.0,
+///////////////////////////////
+
+let geometry = new SphereGeometry(1, 45, 45);
+
+// Shader Park Setup
+//  let mesh = createSculpture(spCode, () => ( {
+//     time: state.time,
+//  } ));
+//  scene.add(mesh);
+
+// *** Uncomment to try using a custom geometry. Make sure to comment out likes 26-29 ***.
+
+let mesh = createSculptureWithGeometry(geometry, spCode, () => ({
+  time: state.time,
 }));
 scene.add(mesh);
 
-// Animation loop
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  const deltaTime = clock.getDelta();
-  mesh.material.uniforms.time.value += deltaTime;
+///////////////////////////////
+
+let controls = new OrbitControls(camera, renderer.domElement, {
+  enableDamping: true,
+  dampingFactor: 0.25,
+  zoomSpeed: 0.5,
+  rotateSpeed: 0.5,
+});
+
+let render = () => {
+  requestAnimationFrame(render);
+  state.time += 0.01;
   controls.update();
   renderer.render(scene, camera);
-}
+};
 
-animate();
+render();
