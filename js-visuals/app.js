@@ -1,8 +1,8 @@
 // Import necessary elements
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { createSculpture, createSculptureWithGeometry } from "shader-park-core";
-import { spCode } from "./sp-code.js"; // Assuming spCode.js contains your Shader Park code
+import { createSculptureWithGeometry } from "shader-park-core";
+import { spCode } from "./spCode.js"; // Assuming spCode.js contains your Shader Park code
 
 // Create scene, camera, renderer
 const scene = new THREE.Scene();
@@ -30,25 +30,6 @@ const geometry = new THREE.SphereGeometry(2, 45, 45);
 const mesh = createSculptureWithGeometry(geometry, spCode, () => ({
   time: 0.0,
 }));
-
-// // Add mesh to scene
-// scene.add(mesh);
-
-// let geometry = new THREE.SphereGeometry(1, 0.3, 100, 9.6);
-// geometry.computeBoundingSphere();
-geometry.center();
-
-// // Shader Park Setup
-// let mesh = createSculpture(spCode, () => ({
-//   time: 0.0,
-// }));
-// scene.add(mesh);
-
-// *** Uncomment to try using a custom geometry. Make sure to comment out likes 26-29 ***.
-
-// let mesh = createSculptureWithGeometry(geometry, spCode, () => ({
-//   time: 0.0,
-// }));
 scene.add(mesh);
 
 // Animation loop
