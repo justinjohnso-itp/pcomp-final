@@ -2,14 +2,22 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createSculptureWithGeometry } from "shader-park-core";
-import { spCode } from './sp-code.js';  // Assuming spCode.js contains your Shader Park code
+import { spCode } from "./sp-code.js"; // Assuming spCode.js contains your Shader Park code
 
 // Create scene, camera, renderer
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(
+  75,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
 camera.position.z = 5.5;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, transparent: true });
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  transparent: true,
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
