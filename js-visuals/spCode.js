@@ -4,42 +4,37 @@
 // To pass external data use the 'input' function. See other examples.
 
 export function spCode() {
-  // Put your Shader Park Code here
 
-  // Demo shape
-  // rotateY((mouse.x * PI) / 2 + time * 0.5);
-  // rotateX((mouse.y * PI) / 2);
-  // metal(0.5);
-  // shine(0.4);
-  // color(getRayDirection() + 0.2);
-  // rotateY(getRayDirection().y * 4 + time);
-  // boxFrame(vec3(0.4), 0.02);
-  // expand(0.02);
-  // blend(nsin(time) * 0.6);
-  // sphere(0.2);
+  let space = getSpace(); // get 3D space coordinates
 
-  // Box
-  // color(vec3(0.2, 0.8, 1.0));
-  // box(vec3(0.4, 0.4, 0.4));
+  // lighting and spacing of shapes
+  lightDirection(getRayDirection()); // align light direction with ray direction
+  setMaxIterations(50); // decreasing this number will speed up the render time but may cause artifacts
+  setStepSize(.8); // similar purpose to setMaxInterations but better for raymarching
 
-  // let s = getSpace();
-  // let scale = 0.1;
-  let amplitude = 0.2;
-  let speed = 5;
-  // let n = noise(s + amplitude + speed) * scale;
-  let scale = 2.0;
-  let s = getSpace();
-  let n = 0.1 * noise(scale * s + time);
+  // variables for animation and coloring
+  let c = [0, 0, 0]; // array holding rgb values
+  let l = 1; // length of the vectors
+  let z = time; // time variable for animation
 
-  // let c = 0.5 * noise(noiseScale * s + time) + 0.5;
+  // looping through the color channels
+  for (let i = 0; i < 3; i++) {
+    let uv = vec3(space.x, space.y, space.z); // create a vector
+    z += .03; // animation over time
+    l = length(space); // changing length of the vectors over time
+    uv += space/l*(sin(z)+1.)*abs(sin(l*9.-z*2.)); // fractal distortion
+    c[i] = .01/length(abs(fract(uv-0.5)-.5)); // glow pattern
+  }
 
-  let r = 0.7 * noise(s + amplitude + speed);
-  let g = 0.4 * noise(s + amplitude + speed);
-  let b = 0.6 * noise(s + amplitude + speed);
+  // color
+  let col = vec3(c[0]/l, c[1]/l, c[2]/l); // fade the colors out based on the length of the vectors over time
+  color(col*5); // apply color
+  // materials based on the values provided by the color values
+  metal(length(col));
+  shine(length(col));
 
-  color(r, g, b);
-  shine(0.9);
-  metal(0.5);
-  sphere(0.7 + n);
-  expand(n);
+  // mirror
+  mirrorN(2, .5);
+  
+  sphere(length(col)*2); // the size of the sphere depends on the values provided by the color vector
 }
