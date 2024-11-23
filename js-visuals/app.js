@@ -3,10 +3,8 @@ import {
   PerspectiveCamera,
   WebGLRenderer,
   Color,
-  TorusKnotGeometry,
   SphereGeometry,
 } from "three";
-import { AudioListener, Audio, AudioLoader, AudioAnalyser, Clock } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { createSculpture, createSculptureWithGeometry } from "shader-park-core";
 import { spCode } from "./spCode.js";
@@ -28,8 +26,6 @@ renderer.setPixelRatio(window.devicePixelRatio);
 
 renderer.setClearColor(new Color(1, 1, 1), 1);
 document.body.appendChild(renderer.domElement);
-
-let clock = new Clock();
 
 ///////////////////////////////
 

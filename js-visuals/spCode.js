@@ -8,9 +8,9 @@ export function spCode() {
   let space = getSpace(); // 3D coordinates of the current pixel being rendered
 
   // lighting and spacing of shapes
-  lightDirection(getRayDirection()); // align light direction with ray direction, returns the direction of the ray from the camera
-  setMaxIterations(50); // decreasing this number will speed up the render time but may cause artifacts
-  setStepSize(.9); // similar purpose to setMaxInterations but better for raymarching
+  lightDirection(0, 0, 100); // lighting direction
+  setMaxIterations(100); // decreasing this number will speed up the render time but may cause artifacts
+  setStepSize(.8); // similar purpose to setMaxInterations but better for raymarching
 
   // variables for animation and coloring
   let arrayColor = [0, 0, 0]; // array holding rgb values
@@ -22,7 +22,14 @@ export function spCode() {
     let uv = vec3(space.x, space.y, space.z); // create a vector
     animation += .09; // speed of animation over time
     vectorLength = length(space); // changing length of the vectors over time
-    uv += space/vectorLength*(sin(animation)+1.)*abs(sin(vectorLength*9.-animation*2.)); // animation driver, modifying the "space function" -> modifying each rendered pixel so it moves through space over time
+
+    // animation driver applied to the uv vector, modifying the "space function" -> modifying each rendered pixel so it moves through space over time
+    // space/vectorLength -> Normalizes the space vector
+    // (sin(animation)+1.) -> oscillation between -1 and 1 over time, adding a value shifts the range, ex: adding 1 shifts the range from 0 to 2
+    // abs ensures that a value stays positive over time
+    // sin(vectorLength*9.-animation* 2) -> scaled vector length and time based oscillation
+    uv += space/vectorLength*(sin(animation)+1.)*abs(sin(vectorLength*9.-animation*2.)); 
+
     arrayColor[i] = .02/length(abs(fract(uv-0.5)-.5)); // calculates a glowing effect based on the uv distortion and the vector length
   }
 
