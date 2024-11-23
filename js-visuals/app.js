@@ -36,12 +36,11 @@ let clock = new Clock();
 let geometry = new SphereGeometry(1, 45, 45);
 
 // Shader Park Setup
+
 //  let mesh = createSculpture(spCode, () => ( {
 //     time: state.time,
 //  } ));
 //  scene.add(mesh);
-
-// *** Uncomment to try using a custom geometry. Make sure to comment out likes 26-29 ***.
 
 let mesh = createSculptureWithGeometry(geometry, spCode, () => ({
   time: state.time,
