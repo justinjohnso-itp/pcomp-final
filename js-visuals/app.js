@@ -12,6 +12,31 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
 import { spCode } from "./spCode.js";
 
+// Recieving MIDI Data
+
+import { initializeMIDI } from './midi.js';
+
+function handleMIDIMessage(message) {
+  const [status, data1, data2] = message.data;
+  console.log(`Status: ${status}, Data1: ${data1}, Data2: ${data2}`);
+  
+  // Pass data to Three.js or Shader Park
+  updateThreeJS(data1, data2);
+  updateShaderPark(data2);
+}
+
+initializeMIDI(handleMIDIMessage);
+
+function updateThreeJS(data1, data2) {
+  // Update your Three.js scene
+  console.log('Three.js updated with:', data1, data2);
+}
+
+function updateShaderPark(data2) {
+  // Update your Shader Park shader
+  console.log('Shader Park updated with:', data2);
+}
+
 // Scene setup
 let scene = new Scene();
 let state = { time: 0 };
