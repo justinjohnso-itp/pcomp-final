@@ -23,7 +23,7 @@ let camera = new PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.z = .9;
+camera.position.z = 1.5;
 
 // Render setup
 let renderer = new WebGLRenderer({ antialias: true });
@@ -36,7 +36,7 @@ document.body.appendChild(renderer.domElement);
 const ContrastShader = {
     uniforms: {
         "tDiffuse": { value: null },
-        "contrast": { value: 1.9 }  // Adjust this value to change contrast (1.0 is normal)
+        "contrast": { value: 1 }  // Adjust this value to change contrast (1.0 is normal)
     },
     vertexShader: `
         varying vec2 vUv;

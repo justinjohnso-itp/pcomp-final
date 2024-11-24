@@ -9,8 +9,8 @@ export function spCode() {
 
   // lighting and spacing of shapes
   lightDirection(0, 0, 0); // lighting direction
-  setMaxIterations(25); // decreasing this number will speed up the render time but may cause artifacts
-  setStepSize(.5); // similar purpose to setMaxInterations but better for raymarching
+  setMaxIterations(50); // decreasing this number will speed up the render time but may cause artifacts
+  setStepSize(.4); // similar purpose to setMaxInterations but better for raymarching
 
   // variables for animation and coloring
   let array = [0, 0, 0]; // array holding rgb values
@@ -34,13 +34,13 @@ export function spCode() {
   }
 
   // color
-  backgroundColor(0, 0, 0);
+  backgroundColor(5, 5, 5);
   let col = vec3(array[0]/vectorLength, array[1]/vectorLength, array[2]/vectorLength); // fade the colors out based on the length of the vectors over time
   color(col*30); // apply color, rach modifier increases or decreases the effect of the colors
   // materials based on the values provided by the color values
   metal(length(col));
   shine(2);
-  occlusion(0.5);
+  occlusion(1);
 
   // mirror, (axis, distance factor)
   mirrorN(3, .6);
