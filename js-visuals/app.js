@@ -61,7 +61,7 @@ let render = () => {
   state.time += 0.01;
 
   // move the sphere up and down over time
-  mesh.position.y = Math.sin(state.time) * 0.5;
+  mesh.position.y = Math.sin(state.time) * 0.2;
   
   // camera rotation
   angle += 0.005;
