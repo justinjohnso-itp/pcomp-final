@@ -8,16 +8,16 @@ export function spCode() {
   let space = getSpace(); // 3D coordinates of the current pixel being rendered
 
   // lighting and spacing of shapes
-  lightDirection(0, 0, 100); // lighting direction
-  setMaxIterations(100); // decreasing this number will speed up the render time but may cause artifacts
-  setStepSize(.8); // similar purpose to setMaxInterations but better for raymarching
+  lightDirection(0, 0, 50); // lighting direction
+  setMaxIterations(45); // decreasing this number will speed up the render time but may cause artifacts
+  setStepSize(.3); // similar purpose to setMaxInterations but better for raymarching
 
   // variables for animation and coloring
-  let arrayColor = [0, 0, 0]; // array holding rgb values
-  let vectorLength = 1; // length of the vectors
+  let array = [0, 0, 0]; // array holding rgb values
+  let vectorLength = 2; // length of the vectors
   let animation = time; // time variable for smooth animation
 
-  // looping through the color channels
+  // looping through the  channels for animation
   for (let i = 0; i < 3; i++) {
     let uv = vec3(space.x, space.y, space.z); // create a vector
     animation += .09; // speed of animation over time
@@ -28,20 +28,21 @@ export function spCode() {
     // (sin(animation)+1.) -> oscillation between -1 and 1 over time, adding a value shifts the range, ex: adding 1 shifts the range from 0 to 2
     // abs ensures that a value stays positive over time
     // sin(vectorLength*9.-animation* 2) -> scaled vector length and time based oscillation
-    uv += space/vectorLength*(sin(animation)+1.)*abs(sin(vectorLength*9.-animation*2.)); 
+    uv += space/vectorLength*(sin(animation)+1.)*abs(sin(vectorLength*3.-animation*1.)); 
 
-    arrayColor[i] = .02/length(abs(fract(uv-0.5)-.5)); // calculates a glowing effect based on the uv distortion and the vector length
+    array[i] = .02/length(abs(fract(uv-1)-.5)); // calculates a glowing effect based on the uv distortion and the vector length
   }
 
   // color
-  let col = vec3(arrayColor[0]/vectorLength, arrayColor[1]/vectorLength, arrayColor[2]/vectorLength); // fade the colors out based on the length of the vectors over time
-  color(col*5); // apply color, rach modifier increases or decreases the effect of the colors
+  let col = vec3(array[0]/vectorLength, array[1]/vectorLength, array[2]/vectorLength); // fade the colors out based on the length of the vectors over time
+  color(col*30); // apply color, rach modifier increases or decreases the effect of the colors
   // materials based on the values provided by the color values
   metal(length(col));
-  shine(length(col));
+  shine(5);
+  occlusion(0.5);
 
   // mirror, (axis, distance factor)
-  mirrorN(2, .5);
+  mirrorN(3, .6);
   
-  sphere(length(col)*2); // the size of the sphere depends on the values provided by the color vector
+  sphere(length(col)*1.5); // the size of the sphere depends on the values provided by the color vector
 }

@@ -13,12 +13,12 @@ let scene = new Scene();
 let state = { time: 0 };
 
 let camera = new PerspectiveCamera(
-  75,
+  15,
   window.innerWidth / window.innerHeight,
   0.1,
   1000
 );
-camera.position.z = 1.5;
+camera.position.z = .9;
 
 let renderer = new WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -52,9 +52,23 @@ let controls = new OrbitControls(camera, renderer.domElement, {
   rotateSpeed: 0.5,
 });
 
+// variables for camera rotation
+let radius = 3;
+let angle = 1;
+
 let render = () => {
   requestAnimationFrame(render);
   state.time += 0.01;
+
+  // move the sphere up and down over time
+  mesh.position.y = Math.sin(state.time) * 0.5;
+  
+  // camera rotation
+  angle += 0.005;
+  camera.position.x = radius * Math.cos(angle);
+  camera.position.y = radius * Math.sin(angle);
+
+  camera.lookAt(0, 0, 0);
   controls.update();
   renderer.render(scene, camera);
 };
