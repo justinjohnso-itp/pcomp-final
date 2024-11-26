@@ -1,109 +1,182 @@
 #include <Ewma.h>
 #include <EwmaT.h>
 #include <Arduino.h>
-#include <BLEMidi.h> // https://github.com/max22-/ESP32-BLE-MIDI
-#include <Adafruit_NeoPixel.h>
+// #include <BLEMidi.h>  // https://github.com/max22-/ESP32-BLE-MIDI
+#include <MIDIUSB.h>
+// #include <Adafruit_NeoPixel.h>
 
-#define LED_PIN 12
-#define LED_COUNT 144
+
+// #define LED_PIN 12
+// #define LED_COUNT 144
+
 
 // Declare our NeoPixel strip object:
-Adafruit_NeoPixel strip(LED_COUNT, LED_PIN);
+// Adafruit_NeoPixel strip(LED_COUNT, LED_PIN);
 
-const int buttonPin = 10;
+
+const int buttonPin1 = 10;
+const int buttonPin2 = 11;
 const int trigPin1 = 2;
 const int echoPin1 = 3;
 const int trigPin2 = 4;
 const int echoPin2 = 5;
+const int trigPin3 = 6;
+const int echoPin3 = 7;
+const int trigPin4 = 8;
+const int echoPin4 = 9;
 
-int buttonState = 0;
-int toggleState = 0;
+
+int buttonState1 = 0;
+int toggleState1 = 0;
+int buttonState2 = 0;
+int toggleState2 = 0;
+
 Ewma smooth1(0.1);
 Ewma smooth2(0.1);
-Ewma smooth3(1);
+Ewma smooth3(0.1);
+Ewma smooth4(0.1);
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Initializing bluetooth");
-  BLEMidiServer.begin("Arduino Nano ESP32");
-  Serial.println("Waiting for connections...");
-  // BLEMidiServer.enableDebugging();  // Uncomment if you want to see some debugging output from the library
+ Serial.begin(115200);
+ Serial.println("Initializing bluetooth");
+//  BLEMidiServer.begin("Arduino Nano ESP32");
+ Serial.println("Waiting for connections...");
+ // BLEMidiServer.enableDebugging();  // Uncomment if you want to see some debugging output from the library
 
-  pinMode(buttonPin, INPUT);  // use button pin as an input
-  pinMode(trigPin1, OUTPUT);
-  pinMode(echoPin1, INPUT);
-  pinMode(trigPin2, OUTPUT);
-  pinMode(echoPin2, INPUT);
 
-  strip.begin();
+ pinMode(buttonPin1, INPUT);  // use button pin as an input
+ pinMode(buttonPin2, INPUT);
+ pinMode(trigPin1, OUTPUT);
+ pinMode(echoPin1, INPUT);
+ pinMode(trigPin2, OUTPUT);
+ pinMode(echoPin2, INPUT);
+ pinMode(trigPin3, OUTPUT);
+ pinMode(echoPin3, INPUT);
+ pinMode(trigPin4, OUTPUT);
+ pinMode(echoPin4, INPUT);
+
+
+ // strip.begin();
 }
 
 // Function to measure the distance using the ultrasonic sensor
 float measureDistance(int trigPin, int echoPin) {
-  // Take the trigger pin low to start a pulse:
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  // Take the trigger pin high:
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  // Take the trigger pin low again to complete the pulse:
-  digitalWrite(trigPin, LOW);
+ // Take the trigger pin low to start a pulse:
+ digitalWrite(trigPin, LOW);
+ delayMicroseconds(2);
+ // Take the trigger pin high:
+ digitalWrite(trigPin, HIGH);
+ delayMicroseconds(10);
+ // Take the trigger pin low again to complete the pulse:
+ digitalWrite(trigPin, LOW);
 
-  // Listen for a pulse on the echo pin:
-  long duration = pulseIn(echoPin, HIGH);
 
-  // Calculate the distance in cm.
-  float distance = (duration * 0.0343) / 2;
+ // Listen for a pulse on the echo pin:
+ long duration = pulseIn(echoPin, HIGH);
 
-  // Limit the distance to the range between 0 and 47 cm
-  if (distance > 30) {
-    distance = 30;
-  } else if (distance < 0) {
-    distance = 0;
-  }
 
-  return distance;
+ // Calculate the distance in cm.
+ float distance = (duration * 0.0343) / 2;
+
+
+ // Limit the distance to the range between 0 and 47 cm
+ if (distance > 30) {
+   distance = 30;
+ } else if (distance < 0) {
+   distance = 0;
+ }
+
+
+ return distance;
+}
+
+void noteOn(byte channel, byte pitch, byte velocity) {
+  midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOn);
+}
+
+void noteOff(byte channel, byte pitch, byte velocity) {
+  midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
+  MidiUSB.sendMIDI(noteOff);
+}
+
+void controlChange(byte channel, byte control, byte value) {
+  midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
+  MidiUSB.sendMIDI(event);
 }
 
 void loop() {
-  bool buttonVal = digitalRead(buttonPin);
-  int potVal = map(smooth3.filter(analogRead(A0)), 0, 4096, 0, 127);
-  float controlVal1, controlVal2;
+ bool buttonVal1 = digitalRead(buttonPin1);
+ bool buttonVal2 = digitalRead(buttonPin2);
+ int potVal1 = analogRead(A0);
+ int potVal2 = analogRead(A1);
+ float controlVal1, controlVal2, controlVal3, controlVal4;
 
-  // Measure distance for all sensors
-  float distance1 = measureDistance(trigPin1, echoPin1);
-  float distance2 = measureDistance(trigPin2, echoPin2);
 
-  if(BLEMidiServer.isConnected()) {  // Only act if MIDI is connected
+ // Measure distance for all sensors
+ float distance1 = smooth1.filter(measureDistance(trigPin1, echoPin1));
+ float distance2 = smooth2.filter(measureDistance(trigPin2, echoPin2));
+ float distance3 = smooth3.filter(measureDistance(trigPin3, echoPin3));
+ float distance4 = smooth4.filter(measureDistance(trigPin4, echoPin4));
 
-    // Button latch
-    if (buttonVal != buttonState) {
-      buttonState = buttonVal;
-      if (!buttonState) {
-        toggleState = !toggleState;
-      }
-      toggleState ? BLEMidiServer.noteOn(0, 42, 127) : BLEMidiServer.noteOff(0, 42, 127);
-    }
 
-    // Potentiometer 
-    // BLEMidiServer.controlChange(2, 13, controlVal2);
+//  if (BLEMidiServer.isConnected()) {  // Only act if MIDI is connected
 
-    // MIDI CC
-    controlVal1 = map(smooth1.filter(distance1), 0, 30, 0, 127);
-    controlVal2 = map(smooth2.filter(distance2), 0, 30, 0, 127);    
-    BLEMidiServer.controlChange(0, 12, controlVal1);
-    BLEMidiServer.controlChange(0, 13, controlVal2);
-    BLEMidiServer.controlChange(0, 14, potVal);
 
-    Serial.print(buttonState);
-    Serial.print(", ");
-    Serial.print(potVal);
-    Serial.print(", ");
-    Serial.print(controlVal1);
-    Serial.print(", ");
-    Serial.println(controlVal2);
-  }
+   // Button latch #1
+   if (buttonVal1 != buttonState1) {
+     buttonState1 = buttonVal1;
+     if (!buttonState1) {
+       toggleState1 = !toggleState1;
+     }
+     toggleState1 ? noteOn(0, 42, 127) : noteOff(0, 42, 127);
+   }
+
+
+   // Button latch #2
+   if (buttonVal2 != buttonState2) {
+     buttonState2 = buttonVal2;
+     if (!buttonState2) {
+       toggleState2 = !toggleState2;
+     }
+     toggleState2 ? noteOn(0, 30, 127) : noteOff(0, 30, 127);
+   }
+
+
+   // MIDI CC
+   controlVal1 = map(distance1, 0, 30, 0, 127);
+   controlVal2 = map(distance2, 0, 30, 0, 127);
+   controlVal3 = map(distance3, 0, 30, 0, 127);
+   controlVal4 = map(distance4, 0, 30, 0, 127);
+   controlChange(0, 10, controlVal1);
+  //  controlChange(0, 11, controlVal2);
+  //  controlChange(0, 12, controlVal3);
+  //  controlChange(0, 13, controlVal4);
+
+   controlChange(0, 14, potVal1);
+   controlChange(0, 15, potVal2);
+
+
+   Serial.print(buttonState1);
+   Serial.print(", ");
+   Serial.print(potVal1);
+   Serial.print(", ");
+   Serial.print(distance1);
+   Serial.print(", ");
+   Serial.println(distance2);
+  
+
+
+   Serial.print(buttonState2);
+   Serial.print(", ");
+   Serial.print(potVal2);
+   Serial.print(", ");
+   Serial.print(distance3);
+   Serial.print(", ");
+   Serial.println(distance4);
+//  }
 }
+
 
 //
 //
@@ -111,7 +184,9 @@ void loop() {
 //
 //
 
+
 // #include <Adafruit_NeoPixel.h>
+
 
 // #ifdef __AVR__
 // #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
@@ -136,6 +211,7 @@ void loop() {
 //   }
 // };
 
+
 // struct Loop
 // {
 //   uint8_t currentChild;
@@ -146,26 +222,32 @@ void loop() {
 //   Loop(uint8_t totchilds, bool timebased, uint16_t tottime) {currentTime=0;currentChild=0;childs=totchilds;timeBased=timebased;cycles=tottime;}
 // };
 
+
 // Strip strip_0(144, 17, 144, NEO_GRB + NEO_KHZ800);
 // struct Loop strip0loop0(1, false, 1);
 
+
 // //[GLOBAL_VARIABLES]
 
+
 // void setup() {
+
 
 //   #if defined(__AVR_ATtiny85__) && (F_CPU == 8000000)
 //   clock_prescale_set(clock_div_1);
 //   #endif
 //   //Your setup here:
 
+
 //   strip_0.strip.begin();
 // }
+
 
 // uint8_t strip0_loop0_eff0() {
 //     // Strip ID: 0 - Effect: Rainbow - LEDS: 144
 //     // Steps: 144 - Delay: 20
 //     // Colors: 3 (255.0.0, 0.255.0, 0.0.255)
-//     // Options: rainbowlen=144, toLeft=true, 
+//     // Options: rainbowlen=144, toLeft=true,
 //   if(millis() - strip_0.effStart < 20 * (strip_0.effStep)) return 0x00;
 //   float factor1, factor2;
 //   uint16_t ind;
@@ -191,10 +273,11 @@ void loop() {
 //   return 0x01;
 // }
 
+
 // uint8_t strip0_loop0() {
 //   uint8_t ret = 0x00;
 //   switch(strip0loop0.currentChild) {
-//     case 0: 
+//     case 0:
 //            ret = strip0_loop0_eff0();break;
 //   }
 //   if(ret & 0x02) {
@@ -210,14 +293,19 @@ void loop() {
 //   return ret;
 // }
 
+
 // void strips_loop() {
 //   if(strip0_loop0() & 0x01)
 //     strip_0.strip.show();
 // }
 
+
 // void loop() {
+
 
 //   //Your code here:
 
+
 //   strips_loop();
 // }
+
