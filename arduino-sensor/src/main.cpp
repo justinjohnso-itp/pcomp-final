@@ -86,14 +86,14 @@ void loop() {
     }
 
     // Potentiometer 
-    BLEMidiServer.controlChange(2, 13, controlVal2);
+    // BLEMidiServer.controlChange(2, 13, controlVal2);
 
     // MIDI CC
     controlVal1 = map(smooth1.filter(distance1), 0, 30, 0, 127);
     controlVal2 = map(smooth2.filter(distance2), 0, 30, 0, 127);    
-    BLEMidiServer.controlChange(1, 12, controlVal1);
-    BLEMidiServer.controlChange(2, 13, controlVal2);
-    BLEMidiServer.controlChange(3, 14, potVal);
+    BLEMidiServer.controlChange(0, 12, controlVal1);
+    BLEMidiServer.controlChange(0, 13, controlVal2);
+    BLEMidiServer.controlChange(0, 14, potVal);
 
     Serial.print(buttonState);
     Serial.print(", ");
