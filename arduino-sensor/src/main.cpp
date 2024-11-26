@@ -129,7 +129,7 @@ void loop() {
      if (!buttonState1) {
        toggleState1 = !toggleState1;
      }
-     toggleState1 ? noteOn(0, 42, 127) : noteOff(0, 42, 127);
+     toggleState1 ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
    }
 
 
@@ -139,7 +139,7 @@ void loop() {
      if (!buttonState2) {
        toggleState2 = !toggleState2;
      }
-     toggleState2 ? noteOn(0, 30, 127) : noteOff(0, 30, 127);
+     toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
    }
 
 
@@ -148,13 +148,14 @@ void loop() {
    controlVal2 = map(distance2, 0, 30, 0, 127);
    controlVal3 = map(distance3, 0, 30, 0, 127);
    controlVal4 = map(distance4, 0, 30, 0, 127);
-   controlChange(0, 10, controlVal1);
+
+  //  controlChange(0, 10, controlVal1);
   //  controlChange(0, 11, controlVal2);
   //  controlChange(0, 12, controlVal3);
   //  controlChange(0, 13, controlVal4);
 
-   controlChange(0, 14, potVal1);
-   controlChange(0, 15, potVal2);
+  //  controlChange(0, 14, potVal1);
+  //  controlChange(0, 15, potVal2);
 
 
    Serial.print(buttonState1);
