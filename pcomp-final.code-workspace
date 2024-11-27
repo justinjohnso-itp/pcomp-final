@@ -1,19 +1,10 @@
 {
-	"folders": [
-		{
-			"name": "arduino-sensor",
-			"path": "../../../../../../../jj4123@nyu.edu - Google Drive/My Drive/2024 Fall/Physical Computing/pcomp-final/arduino-sensor"
-		},
-		{
-			"name": "arduino-lighting",
-			"path": "../../../../../../../jj4123@nyu.edu - Google Drive/My Drive/2024 Fall/Physical Computing/pcomp-final/arduino-lighting"
-		},
-		{
-			"name": "js-visuals",
-			"path": "js-visuals"
-		}
-	],
-	"settings": {
-		"liveServer.settings.multiRootWorkspaceName": "js-visuals"
-	}
+  "folders": [
+    {
+      "path": "arduino-sensor-33iot"
+    },
+    {
+      "path": "js-visuals"
+    }
+  ]
 }
