@@ -190,5 +190,5 @@ void loop() {
   Serial.println(controlVal4);
 
   // Small delay to prevent overwhelming the MIDI bus
-  delay();
+  delay(1);
 }
