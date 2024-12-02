@@ -1,5 +1,3 @@
-#include <Ewma.h>
-#include <EwmaT.h>
 #include <Arduino.h>
 #include <MIDIUSB.h>
 
@@ -20,14 +18,6 @@ int buttonState1 = 0;
 int toggleState1 = 0;
 int buttonState2 = 0;
 int toggleState2 = 0;
-
-// Smoothers for sensor values
-Ewma smooth1(0.05);
-Ewma smooth2(0.05);
-Ewma smooth3(0.05);
-Ewma smooth4(0.05);
-Ewma smooth5(0.1);
-Ewma smooth6(0.1);
 
 // Last state tracking for change detection
 bool lastButtonState1 = LOW;
@@ -105,14 +95,14 @@ void loop() {
   // Read button and analog values
   bool buttonVal1 = digitalRead(buttonPin1);
   bool buttonVal2 = digitalRead(buttonPin2);
-  int potVal1 = smooth5.filter(map(analogRead(A0), 0, 1024, 0, 127));
-  int potVal2 = smooth6.filter(map(analogRead(A1), 0, 1024, 0, 127));
+  int potVal1 = map(analogRead(A0), 0, 1024, 0, 127);
+  int potVal2 = map(analogRead(A1), 0, 1024, 0, 127);
 
   // Measure distances
-  int controlVal1 = map(smooth1.filter(measureDistance(trigPin1, echoPin1)), 0, 30, 0, 127);
-  int controlVal2 = map(smooth2.filter(measureDistance(trigPin2, echoPin2)), 0, 30, 0, 127);
-  int controlVal3 = map(smooth3.filter(measureDistance(trigPin3, echoPin3)), 0, 30, 0, 127);
-  int controlVal4 = map(smooth4.filter(measureDistance(trigPin4, echoPin4)), 0, 30, 0, 127);
+  int controlVal1 = map(measureDistance(trigPin1, echoPin1), 0, 30, 0, 127);
+  int controlVal2 = map(measureDistance(trigPin2, echoPin2), 0, 30, 0, 127);
+  int controlVal3 = map(measureDistance(trigPin3, echoPin3), 0, 30, 0, 127);
+  int controlVal4 = map(measureDistance(trigPin4, echoPin4), 0, 30, 0, 127);
 
   // Button 1 state change detection
   if (buttonVal1 != lastButtonState1) {
