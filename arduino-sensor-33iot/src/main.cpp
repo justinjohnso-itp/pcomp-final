@@ -104,24 +104,28 @@ void loop() {
   int controlVal3 = map(measureDistance(trigPin3, echoPin3), 0, 30, 0, 127);
   int controlVal4 = map(measureDistance(trigPin4, echoPin4), 0, 30, 0, 127);
 
-  // Button 1 state change detection
-  if (buttonVal1 != lastButtonState1) {
-    lastButtonState1 = buttonVal1;
-    toggleState1 = !toggleState1;
-    toggleState1 ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
-  }
+   // Button latch #1
+   if (buttonVal1 != buttonState1) {
+     buttonState1 = buttonVal1;
+     if (!buttonState1) {
+       toggleState1 = !toggleState1;
+     }
+     toggleState1 ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
+   }
 
-  // Button 2 state change detection
-  if (buttonVal2 != lastButtonState2) {
-    lastButtonState2 = buttonVal2;
-    toggleState2 = !toggleState2;
-    toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
-  }
+   // Button latch #2
+   if (buttonVal2 != buttonState2) {
+     buttonState2 = buttonVal2;
+     if (!buttonState2) {
+       toggleState2 = !toggleState2;
+     }
+     toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
+   }
 
   // Potentiometer 1 change detection
   if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
     lastPotVal1 = potVal1;
-    // controlChange(0, 14, potVal1);
+    controlChange(0, 14, potVal1);
   }
 
   // Potentiometer 2 change detection

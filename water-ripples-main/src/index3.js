@@ -112,10 +112,10 @@ function handleMIDIMessage(message) {
   const [status, data1, data2] = message.data;
 
   if (status === 176) {
-    if (data1 === 6) {
+    if (data1 === 20) {
       state.note1 = Math.ceil(data2 / 127);
     }
-    if (data1 === 8) {
+    if (data1 === 21) {
       state.note2 = Math.ceil(data2 / 127);
     }
     if (data1 === 10) {
@@ -137,7 +137,7 @@ function handleMIDIMessage(message) {
       state.pot2 = data2 / 127;
     }
     updateMIDILog(message);
-    // console.log(state);
+    console.log(state);
   }
 }
 
@@ -438,7 +438,7 @@ let app = {
 
     // Set uniforms: mouse interaction
     const hmUniforms = this.heightmapVariable.material.uniforms;
-    console.log(hmUniforms);
+    // console.log(hmUniforms);
     this.raycaster.setFromCamera(this.mouseCoords, camera);
     const intersects = this.raycaster.intersectObject(this.waterMesh);
 
@@ -449,7 +449,7 @@ let app = {
         hmUniforms["mousePos"].value.set(10000, 10000);
       }
       setTimeout(() => {
-        state.note1 = false;
+        state.note1 = 0;
       }, 100);
     } else if (state.note2) {
       if (intersects.length > 0) {
@@ -458,7 +458,7 @@ let app = {
         hmUniforms["mousePos"].value.set(10000, 10000);
       }
       setTimeout(() => {
-        state.note2 = false;
+        state.note2 = 0;
       }, 100);
     } else {
       hmUniforms["mousePos"].value.set(10000, 10000);
