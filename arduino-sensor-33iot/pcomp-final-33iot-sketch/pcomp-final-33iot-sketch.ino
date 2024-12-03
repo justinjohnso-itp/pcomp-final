@@ -30,7 +30,7 @@ int lastControlVal3 = 0;
 int lastControlVal4 = 0;
 
 // MIDI change threshold to reduce unnecessary transmissions
-const int MIDI_CHANGE_THRESHOLD = 3;
+const int MIDI_CHANGE_THRESHOLD = 2;
 
 // Function to measure the distance using the ultrasonic sensor
 float measureDistance(int trigPin, int echoPin) {
@@ -98,57 +98,57 @@ void loop() {
   int potVal1 = map(analogRead(A0), 0, 1024, 0, 127);
   int potVal2 = map(analogRead(A1), 0, 1024, 0, 127);
 
-  // Measure distances
+  // // Measure distances
   int controlVal1 = map(measureDistance(trigPin1, echoPin1), 0, 30, 0, 127);
   int controlVal2 = map(measureDistance(trigPin2, echoPin2), 0, 30, 0, 127);
   int controlVal3 = map(measureDistance(trigPin3, echoPin3), 0, 30, 0, 127);
   int controlVal4 = map(measureDistance(trigPin4, echoPin4), 0, 30, 0, 127);
 
-  // Button 1 state change detection
+  // // // Button 1 state change detection
   if (buttonVal1 != lastButtonState1) {
     lastButtonState1 = buttonVal1;
     toggleState1 = !toggleState1;
     toggleState1 ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
   }
 
-  // Button 2 state change detection
+  // // // // // Button 2 state change detection
   if (buttonVal2 != lastButtonState2) {
     lastButtonState2 = buttonVal2;
     toggleState2 = !toggleState2;
     toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
   }
 
-  // Potentiometer 1 change detection
+  // // Potentiometer 1 change detection
   if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
     lastPotVal1 = potVal1;
     controlChange(0, 14, potVal1);
   }
 
-  // Potentiometer 2 change detection
+  // // // // // Potentiometer 2 change detection
   if (abs(potVal2 - lastPotVal2) > MIDI_CHANGE_THRESHOLD) {
     lastPotVal2 = potVal2;
     controlChange(0, 15, potVal2);
   }
 
-  // Distance sensor 1 change detection
+  // // // Distance sensor 1 change detection
   if (abs(controlVal1 - lastControlVal1) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal1 = controlVal1;
     controlChange(0, 10, controlVal1);
   }
 
-  // Distance sensor 2 change detection
+  // // // // Distance sensor 2 change detection
   if (abs(controlVal2 - lastControlVal2) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal2 = controlVal2;
     controlChange(0, 11, controlVal2);
   }
 
-  // Distance sensor 3 change detection
+  // // // // Distance sensor 3 change detection
   if (abs(controlVal3 - lastControlVal3) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal3 = controlVal3;
     controlChange(0, 12, controlVal3);
   }
 
-  // Distance sensor 4 change detection
+  // // // // Distance sensor 4 change detection
   if (abs(controlVal4 - lastControlVal4) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal4 = controlVal4;
     controlChange(0, 13, controlVal4);
