@@ -438,13 +438,13 @@ let app = {
 
     // Set uniforms: mouse interaction
     const hmUniforms = this.heightmapVariable.material.uniforms;
-    // console.log(hmUniforms);
+    // console.log(this.mouseCoords);
     this.raycaster.setFromCamera(this.mouseCoords, camera);
     const intersects = this.raycaster.intersectObject(this.waterMesh);
 
     if (state.note1) {
       if (intersects.length > 0) {
-        hmUniforms["mousePos"].value.set(0, 250);
+        hmUniforms["mousePos"].value.set(600, 0);
       } else {
         hmUniforms["mousePos"].value.set(10000, 10000);
       }
@@ -453,7 +453,7 @@ let app = {
       }, 100);
     } else if (state.note2) {
       if (intersects.length > 0) {
-        hmUniforms["mousePos"].value.set(0, -250);
+        hmUniforms["mousePos"].value.set(-600, 0);
       } else {
         hmUniforms["mousePos"].value.set(10000, 10000);
       }
