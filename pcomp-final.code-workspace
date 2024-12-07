@@ -9,5 +9,11 @@
     {
       "path": "lighting-test"
     }
-  ]
+  ],
+  "settings": {
+    "files.associations": {
+      "*.html": "html",
+      "cmath": "cpp"
+    }
+  }
 }
