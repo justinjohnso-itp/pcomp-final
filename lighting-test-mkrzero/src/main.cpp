@@ -88,9 +88,9 @@ void loop() {
   sensorDot2A.fill(sensorDot2A.ColorHSV(0, 255, 100));
   sensorDot2B.fill(sensorDot2B.ColorHSV(0, 255, 100));
   
-  // potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
-  // potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
-  // potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
+  potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
+  potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
+  potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
 
   // Write to LEDs
   potRing1.show();
