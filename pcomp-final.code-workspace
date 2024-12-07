@@ -8,6 +8,10 @@
     },
     {
       "path": "lighting-test"
+    },
+    {
+      "name": "lighting-test-mkrzero",
+      "path": "lighting-test-mkrzero"
     }
   ],
   "settings": {
