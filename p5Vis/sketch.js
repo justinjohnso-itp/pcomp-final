@@ -1,7 +1,7 @@
 // MIDI CC
 const midiMappings = {
   6: "note1",
-  7: "note2",
+  8: "note2",
   10: "dist1a",
   11: "dist1b",
   12: "dist2a",
