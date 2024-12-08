@@ -1,13 +1,13 @@
 // MIDI CC
 const midiMappings = {
-  20: 'note1',
-  21: 'note2',
-  10: 'dist1a',
-  11: 'dist1b',
-  12: 'dist2a',
-  13: 'dist2b',
-  14: 'pot1',
-  15: 'pot2',
+  6: "note1",
+  7: "note2",
+  10: "dist1a",
+  11: "dist1b",
+  12: "dist2a",
+  13: "dist2b",
+  14: "pot1",
+  15: "pot2",
 };
 
 let midiInput;
@@ -44,7 +44,7 @@ let pressedColorRight = false;
 function setup() {
   createCanvas(windowWidth, windowHeight);
   background(0);
-  
+
   // Noise for Warp
   noiseDetail(6, 0.7);
 
@@ -71,49 +71,53 @@ function onMIDIFailure() {
 function handleMIDIMessage(event) {
   const [status, data1, data2] = event.data;
 
-  // Process MIDI CC messages
-  if (status === 144 || status === 128) {
-    if (midiMappings[data1]) {
-      const ccName = midiMappings[data1];
-      const value = data2; // MIDI CC value
+  // console.log(status, data1, data2);
 
-      if (ccName === 'note1' || ccName === 'note2') {
-        // Trigger ripple effect when "note1" (CC 20) or "note2" (CC 21) are received
-        if (value > 0) {
-          if (ccName === 'note1') {
-            if (!pressedLeft) {
-              pressStartTimeLeft = millis();
-            }
-            pressedLeft = true;
-            ripplesActiveLeft = !ripplesActiveLeft;
-          } else if (ccName === 'note2') {
-            if (!pressedRight) {
-              pressStartTimeRight = millis();
-            }
-            pressedRight = true;
-            ripplesActiveRight = !ripplesActiveRight;
+  // Process MIDI CC messages
+  // if (status === 144 || status === 128) {
+  if (midiMappings[data1]) {
+    const ccName = midiMappings[data1];
+    const value = data2; // MIDI CC value
+
+    console.log(ccName, value);
+
+    if (ccName === "note1" || ccName === "note2") {
+      // Trigger ripple effect when "note1" (CC 20) or "note2" (CC 21) are received
+      if (value > 0) {
+        if (ccName === "note1") {
+          if (!pressedLeft) {
+            pressStartTimeLeft = millis();
           }
-        } else {
-          if (ccName === 'note1') {
-            pressedLeft = false;
-          } else if (ccName === 'note2') {
-            pressedRight = false;
+          pressedLeft = true;
+          ripplesActiveLeft = !ripplesActiveLeft;
+        } else if (ccName === "note2") {
+          if (!pressedRight) {
+            pressStartTimeRight = millis();
           }
+          pressedRight = true;
+          ripplesActiveRight = !ripplesActiveRight;
+        }
+      } else {
+        if (ccName === "note1") {
+          pressedLeft = false;
+        } else if (ccName === "note2") {
+          pressedRight = false;
         }
       }
+    }
 
-      // Handle other controls like warping and color lerping
-      if (ccName === 'dist1a' || ccName === 'dist1b') {
-        warpingLeft = value > 0;
-      } else if (ccName === 'dist2a' || ccName === 'dist2b') {
-        warpingRight = value > 0;
-      } else if (ccName === 'pot1') {
-        pressedColorLeft = value > 0;
-      } else if (ccName === 'pot2') {
-        pressedColorRight = value > 0;
-      }
+    // Handle other controls like warping and color lerping
+    if (ccName === "dist1a" || ccName === "dist1b") {
+      warpingLeft = value > 0;
+    } else if (ccName === "dist2a" || ccName === "dist2b") {
+      warpingRight = value > 0;
+    } else if (ccName === "pot1") {
+      pressedColorLeft = value > 0;
+    } else if (ccName === "pot2") {
+      pressedColorRight = value > 0;
     }
   }
+  // }
 }
 
 // ************************************ RIPPLES ***********************************************
@@ -146,7 +150,7 @@ function draw() {
         x: 0,
         y: height / 2,
         radius: 0,
-        warpSeed: random(1000) // Unique seed for noise-based warping
+        warpSeed: random(1000), // Unique seed for noise-based warping
       };
       ripplesLeft.push(newRipple);
     }
@@ -170,14 +174,14 @@ function draw() {
 
       for (let j = 0; j < squaresLeft; j++) {
         let angle = map(j, 0, squaresLeft, 0, TWO_PI);
-        
+
         // Fluid warping using Perlin noise
         let warpOffset = 0;
         if (warpingLeft) {
           let noiseScale = 0.5;
           let noiseVal = noise(
-            cos(angle) * noiseScale + warpTimeLeft, 
-            sin(angle) * noiseScale + warpTimeLeft, 
+            cos(angle) * noiseScale + warpTimeLeft,
+            sin(angle) * noiseScale + warpTimeLeft,
             ripple.warpSeed
           );
           warpOffset = map(noiseVal, 0, 1, -30, 30);
@@ -195,9 +199,19 @@ function draw() {
         let squareColor = lerpColor(white, blue, colorLerpLeft);
 
         drawingContext.shadowBlur = 20;
-        drawingContext.shadowColor = color(squareColor.levels[0], squareColor.levels[1], squareColor.levels[2], alpha);
+        drawingContext.shadowColor = color(
+          squareColor.levels[0],
+          squareColor.levels[1],
+          squareColor.levels[2],
+          alpha
+        );
 
-        fill(squareColor.levels[0], squareColor.levels[1], squareColor.levels[2], alpha);
+        fill(
+          squareColor.levels[0],
+          squareColor.levels[1],
+          squareColor.levels[2],
+          alpha
+        );
         noStroke();
         rect(x, y, dynamicSize, dynamicSize);
 
@@ -220,7 +234,7 @@ function draw() {
         x: width,
         y: height / 2,
         radius: 0,
-        warpSeed: random(1000) // Unique seed for noise-based warping
+        warpSeed: random(1000), // Unique seed for noise-based warping
       };
       ripplesRight.push(newRipple);
     }
@@ -246,8 +260,8 @@ function draw() {
         if (warpingRight) {
           let noiseScale = 0.5;
           let noiseVal = noise(
-            cos(angle) * noiseScale + warpTimeRight, 
-            sin(angle) * noiseScale + warpTimeRight, 
+            cos(angle) * noiseScale + warpTimeRight,
+            sin(angle) * noiseScale + warpTimeRight,
             ripple.warpSeed
           );
           warpOffset = map(noiseVal, 0, 1, -30, 30);
@@ -260,14 +274,28 @@ function draw() {
         dynamicSize = constrain(dynamicSize, 1, squareSize);
 
         let alpha = map(ripple.radius, 0, width, 255, 0);
-        let hotpink = color(random(170, 255), random(80, 120), random(140, 180));
+        let hotpink = color(
+          random(170, 255),
+          random(80, 120),
+          random(140, 180)
+        );
         let white = color(255, 255, 255);
         let squareColor = lerpColor(white, hotpink, colorLerpRight);
 
         drawingContext.shadowBlur = 20;
-        drawingContext.shadowColor = color(squareColor.levels[0], squareColor.levels[1], squareColor.levels[2], alpha);
+        drawingContext.shadowColor = color(
+          squareColor.levels[0],
+          squareColor.levels[1],
+          squareColor.levels[2],
+          alpha
+        );
 
-        fill(squareColor.levels[0], squareColor.levels[1], squareColor.levels[2], alpha);
+        fill(
+          squareColor.levels[0],
+          squareColor.levels[1],
+          squareColor.levels[2],
+          alpha
+        );
         noStroke();
         rect(x, y, dynamicSize, dynamicSize);
 
