@@ -8,7 +8,7 @@
       "path": "lighting-test-mkrzero"
     },
     {
-      "path": "shader-park-vis"
+      "path": "p5Vis"
     }
   ],
   "settings": {
@@ -16,6 +16,6 @@
       "*.html": "html",
       "cmath": "cpp"
     },
-    "liveServer.settings.multiRootWorkspaceName": "shader-park-vis"
+    "liveServer.settings.multiRootWorkspaceName": "p5Vis"
   }
 }
