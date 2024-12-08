@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Shader Park</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- import the webpage's stylesheet -->
+    <link rel="stylesheet" href="/style.css">
+    <h1>
+    </h1>
+  </head>  
+  <body>    
+    <div class="glitchButton" style="position:fixed;top:20px;right:20px;"></div>    
+    <script src="https://button.glitch.me/button.js"></script>
+
+    <canvas class="my-canvas"></canvas>
+    <script type="module">
+      import {sculptToMinimalRenderer} from 'https://unpkg.com/shader-park-core/dist/shader-park-core.esm.js';
+
+      // Try switching out ./spCode3.js with ./spCode1.js etc.
+      import {spCode} from './spCode.js';
+      let canvas = document.querySelector('.my-canvas');
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      //canvas.width = 200;
+      //canvas.height = 200;
+      // canvas.width = 200 * devicePixelRatio;
+      // canvas.height = 200 * devicePixelRatio;
+      
+      let state = {
+        buttonHover: 0.0,
+        currButtonHover: 0.0,
+        click: 0.0,
+        currClick: 0.0
+      };
+      let test = 5;
+      
+      canvas.addEventListener('mouseover', () => state.buttonHover = 5, false);
+      canvas.addEventListener('mouseout', () => state.buttonHover = 0.0, false);
+      canvas.addEventListener('mousedown', () => state.click = 1.0, false);
+      canvas.addEventListener('mouseup', () => state.click = 0.0, false);
+      
+      // This converts your Shader Park code into a shader and renders it to the my-canvas element
+      sculptToMinimalRenderer(canvas, spCode, () => {
+        state.currButtonHover = state.currButtonHover*.999 + state.buttonHover*.001;
+        state.currClick = state.currClick*.92 + state.click*.08;
+        return {
+          'buttonHover' : state.currButtonHover,
+          'click' : state.currClick
+        };
+      });
+    </script>
+  </body>
+</html>
