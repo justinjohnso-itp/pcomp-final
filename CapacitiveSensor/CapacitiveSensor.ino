@@ -1,7 +1,7 @@
 #include <CapacitiveSensor.h>
 
-CapacitiveSensor cs_4_2 = CapacitiveSensor(4, 2); // 10M resistor between pins 4 & 2
-CapacitiveSensor cs_5_3 = CapacitiveSensor(5, 3); // 10M resistor between pins 5 & 3
+CapacitiveSensor cs_4_2 = CapacitiveSensor(4, 2);
+CapacitiveSensor cs_5_3 = CapacitiveSensor(5, 3);
 
 
 const long threshold = 1000;
