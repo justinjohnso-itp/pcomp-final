@@ -4,7 +4,9 @@
 #include <CapacitiveSensor.h>
 
 // CapacitiveSensor cs_12_10 = CapacitiveSensor(12,10); // 10 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, foil
-CapacitiveSensor cs_13_11 = CapacitiveSensor(13,11);
+// CapacitiveSensor cs_13_11 = CapacitiveSensor(13,11);
+
+// const long threshold = 350;
 
 // Init LEDs
 #define LED_PIN_POT1 18
@@ -123,7 +125,7 @@ void setup() {
 
   //Capacative sensors
   // cs_12_10.set_CS_AutocaL_Millis(0xFFFFFFFF); // turn off autocalibrate on channel 1 - just as an example Serial.begin(9600);
-  cs_13_11.set_CS_AutocaL_Millis(0xFFFFFFFF); 
+  // cs_13_11.set_CS_AutocaL_Millis(0xFFFFFFFF); 
 
   // Pin setup
   pinMode(buttonPin1, INPUT);
@@ -142,21 +144,16 @@ void setup() {
 }
 
 void loop() {
-  // Capacative sensors
-  long start = millis();
-
+  // Read values
   // long total1 = cs_12_10.capacitiveSensor(30);
-  long total2 = cs_13_11.capacitiveSensor(30);
+  // long total2 = cs_13_11.capacitiveSensor(30);
 
-  Serial.print(millis() - start); // check on performance in milliseconds
-
-  // Serial.print("\t"); // tab character for debug window spacing
-
-  // Serial.println(total1); // print sensor output 1
-
-  Serial.print("\t"); // tab character for debug window spacing
-
-  Serial.println(total2); // print sensor output 1
+  // if (total1 > threshold) {
+  //   Serial.println("Button 1 Pressed");
+  // }
+  // if (total2 > threshold) {
+  //   Serial.println("Button 2 Pressed");
+  // }
   
   // /*
   // // Start smoothing
@@ -194,28 +191,28 @@ void loop() {
   sensorDot2A.clear();
   sensorDot2B.clear();
 
-  potRing1.fill(potRing1.ColorHSV(0, 255, 100));
-  potRing2.fill(potRing2.ColorHSV(0, 255, 100));
-  sensorRing1A.fill(sensorRing1A.ColorHSV(0, 255, 100));
-  sensorRing1B.fill(sensorRing1B.ColorHSV(0, 255, 100));
-  sensorDot2A.fill(sensorDot2A.ColorHSV(0, 255, 100));
-  sensorDot2B.fill(sensorDot2B.ColorHSV(0, 255, 100));
+  // potRing1.fill(potRing1.ColorHSV(0, 255, 100));
+  // potRing2.fill(potRing2.ColorHSV(0, 255, 100));
+  // sensorRing1A.fill(sensorRing1A.ColorHSV(0, 255, 100));
+  // sensorRing1B.fill(sensorRing1B.ColorHSV(0, 255, 100));
+  // sensorDot2A.fill(sensorDot2A.ColorHSV(0, 255, 100));
+  // sensorDot2B.fill(sensorDot2B.ColorHSV(0, 255, 100));
   
-  potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
-  potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
-  potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
+  // potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
+  // potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
+  // potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
 
-  potRing2.setPixelColor(potValMapped2-1, potRing2.ColorHSV(60, 130, 80));
-  potRing2.setPixelColor(potValMapped2, potRing2.ColorHSV(60, 130, 255));
-  potRing2.setPixelColor(potValMapped2+1, potRing2.ColorHSV(60, 130, 80));
+  // potRing2.setPixelColor(potValMapped2-1, potRing2.ColorHSV(60, 130, 80));
+  // potRing2.setPixelColor(potValMapped2, potRing2.ColorHSV(60, 130, 255));
+  // potRing2.setPixelColor(potValMapped2+1, potRing2.ColorHSV(60, 130, 80));
 
-  // Write to LEDs
-  potRing1.show();
-  potRing2.show();
-  sensorRing1A.show();
-  sensorRing1B.show();
-  sensorDot2A.show();
-  sensorDot2B.show();
+  // // Write to LEDs
+  // potRing1.show();
+  // potRing2.show();
+  // sensorRing1A.show();
+  // sensorRing1B.show();
+  // sensorDot2A.show();
+  // sensorDot2B.show();
 
   // Read button and analog values
   bool buttonVal1 = digitalRead(buttonPin1);
