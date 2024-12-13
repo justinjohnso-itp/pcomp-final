@@ -1,5 +1,40 @@
 #include <Arduino.h>
 #include <MIDIUSB.h>
+#include <Adafruit_NeoPixel.h>
+#include <CapacitiveSensor.h>
+
+CapacitiveSensor cs_12_10 = CapacitiveSensor(12,10); // 10 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, foil
+CapacitiveSensor cs_13_11 = CapacitiveSensor(13,11);
+
+const long threshold = 350;
+
+// Init LEDs
+#define LED_PIN_POT1 18
+#define LED_PIN_SENSOR1A 16
+#define LED_PIN_SENSOR1B 17 
+#define LED_PIN_POT2 21
+#define LED_PIN_SENSOR2A 19
+#define LED_PIN_SENSOR2B 20
+
+#define LED_COUNT_RING 24
+#define LED_COUNT_DOT 7
+
+Adafruit_NeoPixel potRing1(LED_COUNT_RING, LED_PIN_POT1, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel potRing2(LED_COUNT_RING, LED_PIN_POT2, NEO_GRB + NEO_KHZ800);
+
+Adafruit_NeoPixel sensorRing1A(LED_COUNT_RING, LED_PIN_SENSOR1A, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorRing1B(LED_COUNT_RING, LED_PIN_SENSOR1B, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorDot2A(LED_COUNT_DOT, LED_PIN_SENSOR2A, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorDot2B(LED_COUNT_DOT, LED_PIN_SENSOR2B, NEO_GRB + NEO_KHZ800);
+
+int potInput1 = A0;
+int potInput2 = A1;
+// const int numReadings = 25;
+
+// int readings[numReadings];  // the readings from the analog input
+// int readIndex = 0;          // the index of the current reading
+// int total = 0;              // the running total
+// int potValAverage1 = 0;     // the average
 
 // Pin definitions
 const int buttonPin1 = 10;
@@ -75,6 +110,23 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Initializing...");
 
+  // LED setup
+  potRing1.begin();
+  potRing2.begin();
+  sensorRing1A.begin();
+  sensorRing1B.begin();
+  sensorDot2A.begin();
+  sensorDot2B.begin();
+
+  // // Set up smoothing
+  // for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+  //   readings[thisReading] = 0;
+  // }
+
+  // Capacative sensors
+  cs_12_10.set_CS_AutocaL_Millis(0xFFFFFFFF); // turn off autocalibrate on channel 1 - just as an example Serial.begin(9600);
+  cs_13_11.set_CS_AutocaL_Millis(0xFFFFFFFF); 
+
   // Pin setup
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
@@ -92,11 +144,67 @@ void setup() {
 }
 
 void loop() {
+  // Read values
+  long total1 = cs_12_10.capacitiveSensor(30);
+  long total2 = cs_13_11.capacitiveSensor(30);
+
+  bool buttonVal1;
+  bool buttonVal2;
+
+  if (total1 > threshold) {
+    // Serial.println("Button 1 Pressed");
+    buttonVal1 = 1;
+  } else {
+    buttonVal1 = 0;
+  }
+  if (total2 > threshold) {
+    // Serial.println("Button 2 Pressed");
+    buttonVal2 = 1;
+  } else {
+    buttonVal2 = 0;
+  }
+  
+  // /*
+  // // Start smoothing
+  // */
+  
+  // total = total - readings[readIndex]; // subtract the last reading
+  // readings[readIndex] = analogRead(potInput1); // read from the sensor
+  // total = total + readings[readIndex]; // add the reading to the total
+  // readIndex = readIndex + 1; // advance to the next position in the array
+
+  // if (readIndex >= numReadings) { // if we're at the end of the array...
+  //   readIndex = 0; // ...wrap around to the beginning
+  // }
+
+  // potValAverage1 = total / numReadings; // calculate the average:
+  // delay(1);  // delay in between reads for stability
+
+  // /*
+  // // Endmoothing
+  // */
+
+  // LED stuff
+  int potValMapped1 = map(analogRead(potInput1), 0, 1023, 0, LED_COUNT_RING-1);
+  int potValMapped2 = map(analogRead(potInput2), 0, 1023, 0, LED_COUNT_RING-1);
+
+  // Serial.print(">potValMapped1:");
+  // Serial.println(potValMapped1);
+
+  // Serial.print(">potValMapped2:");
+  // Serial.println(potValMapped2);
+
   // Read button and analog values
-  bool buttonVal1 = digitalRead(buttonPin1);
-  bool buttonVal2 = digitalRead(buttonPin2);
+  // bool buttonVal1 = digitalRead(buttonPin1);
+  // bool buttonVal2 = digitalRead(buttonPin2);
   int potVal1 = map(analogRead(A0), 0, 1024, 0, 127);
   int potVal2 = map(analogRead(A1), 0, 1024, 0, 127);
+
+  // Serial.print(">potVal1:");
+  // Serial.println(potVal1);
+
+  // Serial.print(">potVal2:");
+  // Serial.println(potVal2);
 
   // // Measure distances
   int controlVal1 = map(measureDistance(trigPin1, echoPin1), 0, 30, 0, 127);
@@ -104,23 +212,23 @@ void loop() {
   int controlVal3 = map(measureDistance(trigPin3, echoPin3), 0, 30, 0, 127);
   int controlVal4 = map(measureDistance(trigPin4, echoPin4), 0, 30, 0, 127);
 
-   // Button latch #1
-   if (buttonVal1 != buttonState1) {
-     buttonState1 = buttonVal1;
-     if (!buttonState1) {
-       toggleState1 = !toggleState1;
-     }
-     toggleState1 ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
-   }
+  //  // Button latch #1
+  //  if (buttonVal1 != buttonState1) {
+  //    buttonState1 = buttonVal1;
+  //    if (!buttonState1) {
+  //      toggleState1 = !toggleState1;
+  //    }
+  //    toggleState1 ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
+  //  }
 
-   // Button latch #2
-   if (buttonVal2 != buttonState2) {
-     buttonState2 = buttonVal2;
-     if (!buttonState2) {
-       toggleState2 = !toggleState2;
-     }
-     toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
-   }
+  //  // Button latch #2
+  //  if (buttonVal2 != buttonState2) {
+  //    buttonState2 = buttonVal2;
+  //    if (!buttonState2) {
+  //      toggleState2 = !toggleState2;
+  //    }
+  //    toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
+  //  }
 
   // Potentiometer 1 change detection
   if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
@@ -164,6 +272,36 @@ void loop() {
     MidiUSB.flush();
     lastFlushTime = millis();
   }
+
+  potRing1.clear();
+  potRing2.clear();
+  sensorRing1A.clear();
+  sensorRing1B.clear();
+  sensorDot2A.clear();
+  sensorDot2B.clear();
+
+  potRing1.fill(potRing1.ColorHSV(0, 255, 100));
+  potRing2.fill(potRing2.ColorHSV(0, 255, 100));
+  sensorRing1A.fill(sensorRing1A.ColorHSV(0, 255, 100));
+  sensorRing1B.fill(sensorRing1B.ColorHSV(0, 255, 100));
+  sensorDot2A.fill(sensorDot2A.ColorHSV(0, 255, 100));
+  sensorDot2B.fill(sensorDot2B.ColorHSV(0, 255, 100));
+  
+  potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
+  potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
+  potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
+
+  potRing2.setPixelColor(potValMapped2-1, potRing2.ColorHSV(60, 130, 80));
+  potRing2.setPixelColor(potValMapped2, potRing2.ColorHSV(60, 130, 255));
+  potRing2.setPixelColor(potValMapped2+1, potRing2.ColorHSV(60, 130, 80));
+
+  // Write to LEDs
+  potRing1.show();
+  potRing2.show();
+  sensorRing1A.show();
+  sensorRing1B.show();
+  sensorDot2A.show();
+  sensorDot2B.show();
 
   // Debug output
   Serial.print("Button1: ");
