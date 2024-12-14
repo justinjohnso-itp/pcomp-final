@@ -1,7 +1,7 @@
 // MIDI CC
 const midiMappings = {
-  6: "note1",
-  8: "note2",
+  20: "note1",
+  21: "note2",
   10: "dist1a",
   11: "dist1b",
   12: "dist2a",
@@ -171,6 +171,9 @@ function draw() {
     // Smoothly transition color lerp
     colorLerpLeft = max(dis1aValue, dis1bValue);
 
+    // Map dist1a to a size range (5 to 25)
+    let leftShapeSize = map(dis1aValue, 0, 1, 35, 10); // Mapped size based on dist1a
+
     // Draw and update all ripples on the left
     for (let i = ripplesLeft.length - 1; i >= 0; i--) {
       let ripple = ripplesLeft[i];
@@ -188,7 +191,7 @@ function draw() {
             sin(angle) * noiseScale + warpTimeLeft,
             ripple.warpSeed
           );
-          let noiseAmplitude = map(dis1bValue, 0, 1, 30, 0); // Scale with dis1bValue
+          let noiseAmplitude = map(dis1bValue, 0, 1, 90, 0); // Scale with dis1bValue
           warpOffset = map(noiseVal, 0, 1, -noiseAmplitude, noiseAmplitude);
         }
 
@@ -255,6 +258,9 @@ function draw() {
     // Smoothly transition color lerp
     colorLerpRight = max(dis2aValue, dis2bValue);
 
+    // Map dist2a to a size range (5 to 25)
+    let rightShapeSize = map(dis2aValue, 0, 1, 35, 10); // Mapped size based on dist2a
+
     // Draw and update all ripples on the right
     for (let i = ripplesRight.length - 1; i >= 0; i--) {
       let ripple = ripplesRight[i];
@@ -272,7 +278,7 @@ function draw() {
             sin(angle) * noiseScale + warpTimeRight,
             ripple.warpSeed
           );
-          let noiseAmplitude = map(dis2bValue, 0, 1, 30, 0); // Scale with dis2bValue
+          let noiseAmplitude = map(dis2bValue, 0, 1, 90, 0); // Scale with dis2bValue
           warpOffset = map(noiseVal, 0, 1, -noiseAmplitude, noiseAmplitude);
         }
 
