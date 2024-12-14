@@ -280,9 +280,9 @@ void loop() {
   sensorDot2A.clear();
   sensorDot2B.clear();
 
-  potRing1.fill(potRing1.ColorHSV(0, 255, 100));
-  potRing2.fill(potRing2.ColorHSV(0, 255, 100));
-  sensorRing1A.fill(sensorRing1A.ColorHSV(0, 255, 100));
+  potRing1.fill(potRing1.ColorHSV(1000, 255, 100));
+  potRing2.fill(potRing2.ColorHSV(1000, 255, 100));
+  sensorRing1A.fill(sensorRing1A.ColorHSV(255,80,100));
   sensorRing1B.fill(sensorRing1B.ColorHSV(0, 255, 100));
   sensorDot2A.fill(sensorDot2A.ColorHSV(0, 255, 100));
   sensorDot2B.fill(sensorDot2B.ColorHSV(0, 255, 100));
