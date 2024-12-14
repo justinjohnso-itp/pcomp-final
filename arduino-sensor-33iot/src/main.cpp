@@ -230,37 +230,37 @@ void loop() {
   // Potentiometer 1 change detection
   if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
     lastPotVal1 = potVal1;
-    // controlChange(0, 14, potVal1);
+    controlChange(0, 14, potVal1);
   }
 
   // Potentiometer 2 change detection
   if (abs(potVal2 - lastPotVal2) > MIDI_CHANGE_THRESHOLD) {
     lastPotVal2 = potVal2;
-    // controlChange(0, 15, potVal2);
+    controlChange(0, 15, potVal2);
   }
 
   // Distance sensor 1 change detection
   if (abs(controlVal1 - lastControlVal1) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal1 = controlVal1;
-    // controlChange(0, 10, controlVal1);
+    controlChange(0, 10, controlVal1);
   }
 
   // Distance sensor 2 change detection
   if (abs(controlVal2 - lastControlVal2) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal2 = controlVal2;
-    // controlChange(0, 11, controlVal2);
+    controlChange(0, 11, controlVal2);
   }
 
   // Distance sensor 3 change detection
   if (abs(controlVal3 - lastControlVal3) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal3 = controlVal3;
-    // controlChange(0, 12, controlVal3);
+    controlChange(0, 12, controlVal3);
   }
 
   // Distance sensor 4 change detection
   if (abs(controlVal4 - lastControlVal4) > MIDI_CHANGE_THRESHOLD) {
     lastControlVal4 = controlVal4;
-    // controlChange(0, 13, controlVal4);
+    controlChange(0, 13, controlVal4);
   }
 
   // Optional periodic MIDI flush to ensure messages are sent

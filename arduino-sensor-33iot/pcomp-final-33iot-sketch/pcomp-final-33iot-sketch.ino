@@ -6,7 +6,7 @@
 CapacitiveSensor cs_12_10 = CapacitiveSensor(12,10); // 10 megohm resistor between pins 4 & 2, pin 2 is sensor pin, add wire, foil
 CapacitiveSensor cs_13_11 = CapacitiveSensor(13,11);
 
-const long threshold = 350;
+const long capacitiveThreshold = 350;
 
 // Init LEDs
 #define LED_PIN_POT1 18
@@ -49,10 +49,13 @@ const int trigPin4 = 9;
 const int echoPin4 = 8;
 
 // State variables
-int buttonState1 = 0;
-int toggleState1 = 0;
-int buttonState2 = 0;
-int toggleState2 = 0;
+// int buttonState1 = 0;
+// int toggleState1 = 0;
+// int buttonState2 = 0;
+// int toggleState2 = 0;
+
+int buttonState = 0;
+int toggleState = 0;
 
 // Last state tracking for change detection
 bool lastButtonState1 = LOW;
@@ -143,27 +146,7 @@ void setup() {
   delay(100);
 }
 
-void loop() {
-  // Read values
-  long total1 = cs_12_10.capacitiveSensor(30);
-  long total2 = cs_13_11.capacitiveSensor(30);
-
-  bool buttonVal1;
-  bool buttonVal2;
-
-  if (total1 > threshold) {
-    // Serial.println("Button 1 Pressed");
-    buttonVal1 = 1;
-  } else {
-    buttonVal1 = 0;
-  }
-  if (total2 > threshold) {
-    // Serial.println("Button 2 Pressed");
-    buttonVal2 = 1;
-  } else {
-    buttonVal2 = 0;
-  }
-  
+void loop() {  
   // /*
   // // Start smoothing
   // */
@@ -193,6 +176,11 @@ void loop() {
 
   // Serial.print(">potValMapped2:");
   // Serial.println(potValMapped2);
+
+  // Read values
+  // long total1 = cs_12_10.capacitiveSensor(30);
+  long capacitiveVal = cs_13_11.capacitiveSensor(30);
+  bool buttonVal = capacitiveVal > capacitiveThreshold ? 1 : 0;
 
   // Read button and analog values
   // bool buttonVal1 = digitalRead(buttonPin1);
@@ -229,6 +217,15 @@ void loop() {
   //    }
   //    toggleState2 ? controlChange(0, 8, 127) : controlChange(0, 9, 127);
   //  }
+
+  // Capacitive latch
+  if (buttonVal != buttonState) {
+    buttonState = buttonVal;
+    if (!buttonState) {
+      toggleState = !toggleState;
+    }
+    toggleState ? controlChange(0, 6, 127) : controlChange(0, 7, 127);
+  }
 
   // Potentiometer 1 change detection
   if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
@@ -304,10 +301,8 @@ void loop() {
   sensorDot2B.show();
 
   // Debug output
-  Serial.print("Button1: ");
-  Serial.print(buttonVal1);
-  Serial.print(" Button2: ");
-  Serial.print(buttonVal2);
+  Serial.print(" Button: ");
+  Serial.print(toggleState);
   Serial.print(", Pot1: ");
   Serial.print(potVal1);
   Serial.print(", Pot2: ");
