@@ -133,8 +133,8 @@ void setup() {
   // Pin setup
   pinMode(buttonPin1, INPUT);
   pinMode(buttonPin2, INPUT);
-  pinMode(trigPin1, OUTPUT);
-  pinMode(echoPin1, INPUT);
+  // pinMode(trigPin1, OUTPUT);
+  // pinMode(echoPin1, INPUT);
   pinMode(trigPin2, OUTPUT);
   pinMode(echoPin2, INPUT);
   pinMode(trigPin3, OUTPUT);
@@ -195,7 +195,7 @@ void loop() {
   // Serial.println(potVal2);
 
   // // Measure distances
-  int controlVal1 = map(measureDistance(trigPin1, echoPin1), 0, 30, 0, 127);
+  // int controlVal1 = map(measureDistance(trigPin1, echoPin1), 0, 30, 0, 127);
   int controlVal2 = map(measureDistance(trigPin2, echoPin2), 0, 30, 0, 127);
   int controlVal3 = map(measureDistance(trigPin3, echoPin3), 0, 30, 0, 127);
   int controlVal4 = map(measureDistance(trigPin4, echoPin4), 0, 30, 0, 127);
@@ -239,11 +239,11 @@ void loop() {
     controlChange(0, 15, potVal2);
   }
 
-  // Distance sensor 1 change detection
-  if (abs(controlVal1 - lastControlVal1) > MIDI_CHANGE_THRESHOLD) {
-    lastControlVal1 = controlVal1;
-    controlChange(0, 10, controlVal1);
-  }
+  // // Distance sensor 1 change detection
+  // if (abs(controlVal1 - lastControlVal1) > MIDI_CHANGE_THRESHOLD) {
+  //   lastControlVal1 = controlVal1;
+  //   controlChange(0, 10, controlVal1);
+  // }
 
   // Distance sensor 2 change detection
   if (abs(controlVal2 - lastControlVal2) > MIDI_CHANGE_THRESHOLD) {
@@ -277,20 +277,30 @@ void loop() {
   sensorDot2A.clear();
   sensorDot2B.clear();
 
-  potRing1.fill(potRing1.ColorHSV(1000, 255, 100));
-  potRing2.fill(potRing2.ColorHSV(1000, 255, 100));
-  sensorRing1A.fill(sensorRing1A.ColorHSV(255,80,100));
-  sensorRing1B.fill(sensorRing1B.ColorHSV(0, 255, 100));
-  sensorDot2A.fill(sensorDot2A.ColorHSV(0, 255, 100));
-  sensorDot2B.fill(sensorDot2B.ColorHSV(0, 255, 100));
+  // right top pot
+  potRing1.setBrightness(50);
+  potRing1.fill(potRing1.Color(255, 69, 0));
+  // left top pot
+  potRing2.setBrightness(50);
+  potRing2.fill(potRing2.Color(0, 0, 139));
+  // right rings
+  sensorRing1A.fill(sensorRing1A.Color(255, 50, 0));
+  sensorRing1B.fill(sensorRing1B.Color(255, 50, 0));
+  // left dots
+  sensorDot2A.setBrightness(40);
+  sensorDot2A.fill(sensorDot2A.Color(0, 204, 204));
+  sensorDot2B.setBrightness(40);
+  sensorDot2B.fill(sensorDot2B.Color(0, 204, 204));
   
-  potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
-  potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
-  potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
+  // Potentiometer ring 1 - right
+  potRing1.setPixelColor(potValMapped1-1, potRing1.Color(255, 105, 180));
+  potRing1.setPixelColor(potValMapped1, potRing1.Color(255, 105, 180));
+  potRing1.setPixelColor(potValMapped1+1, potRing1.Color(255, 105, 180));
 
-  potRing2.setPixelColor(potValMapped2-1, potRing2.ColorHSV(60, 130, 80));
-  potRing2.setPixelColor(potValMapped2, potRing2.ColorHSV(60, 130, 255));
-  potRing2.setPixelColor(potValMapped2+1, potRing2.ColorHSV(60, 130, 80));
+  // Potentiometer ring 2 - left
+  potRing2.setPixelColor(potValMapped2-1, potRing2.Color(0, 255, 255));
+  potRing2.setPixelColor(potValMapped2, potRing2.Color(0, 255, 255));
+  potRing2.setPixelColor(potValMapped2+1, potRing2.Color(0, 255, 255));
 
   // Write to LEDs
   potRing1.show();
@@ -307,8 +317,8 @@ void loop() {
   Serial.print(potVal1);
   Serial.print(", Pot2: ");
   Serial.print(potVal2);
-  Serial.print(", Distance1: ");
-  Serial.print(controlVal1);
+  // Serial.print(", Distance1: ");
+  // Serial.print(controlVal1);
   Serial.print(", Distance2: ");
   Serial.print(controlVal2);
   Serial.print(", Distance3: ");
