@@ -20,11 +20,11 @@ Adafruit_VL53L0X tofA1, tofA2, tofB1, tofB2;
 
 // LEDs for each half
 // Half A LEDs
-#define LED_PIN_POT_A      7
+#define LED_PIN_POT_A      6
 #define LED_PIN_SENSOR_A1  4  // ToF sensor A1
 #define LED_PIN_SENSOR_A2  5  // ToF sensor A2
 // Half B LEDs
-#define LED_PIN_POT_B      6
+#define LED_PIN_POT_B      7
 #define LED_PIN_SENSOR_B1  2  // ToF sensor B1
 #define LED_PIN_SENSOR_B2  3  // ToF sensor B2
 
@@ -41,13 +41,13 @@ Adafruit_NeoPixel sensorDotB1(LED_COUNT_DOT, LED_PIN_SENSOR_B1, NEO_GRB + NEO_KH
 Adafruit_NeoPixel sensorDotB2(LED_COUNT_DOT, LED_PIN_SENSOR_B2, NEO_GRB + NEO_KHZ800);
 
 // Analog inputs (potentiometers)
-int potInputA = A0;
-int potInputB = A1;
+int potInputA = A1;
+int potInputB = A0;
 
 // ---------- Parameters & State ----------
 
 const int SENSOR_MIN_DISTANCE = 50;
-const int SENSOR_MAX_DISTANCE = 300;
+const int SENSOR_MAX_DISTANCE = 200;
 
 const int ACTIVITY_THRESHOLD = 5;       // mm change to trigger activity
 const unsigned long IDLE_TIMEOUT = 100;   // ms until idle (note off)
@@ -93,13 +93,13 @@ const byte NOTE_B = 60; // Note for Half B (C2)
 
 // MIDI CC numbers (customize as needed)
 // Half A
-const byte CC_POT_A = 14;
-const byte CC_SENSOR_A1 = 10;
-const byte CC_SENSOR_A2 = 11;
+const byte CC_POT_A = 15;
+const byte CC_SENSOR_A1 = 12;
+const byte CC_SENSOR_A2 = 13;
 // Half B
-const byte CC_POT_B = 15;
-const byte CC_SENSOR_B1 = 12;
-const byte CC_SENSOR_B2 = 13;
+const byte CC_POT_B = 14;
+const byte CC_SENSOR_B1 = 10;
+const byte CC_SENSOR_B2 = 11;
 
 // Track current note state per half
 bool noteActiveA = false;
