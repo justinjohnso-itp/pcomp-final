@@ -47,10 +47,10 @@ int potInputB = A1;
 // ---------- Parameters & State ----------
 
 const int SENSOR_MIN_DISTANCE = 50;
-const int SENSOR_MAX_DISTANCE = 1200;
+const int SENSOR_MAX_DISTANCE = 300;
 
-const int ACTIVITY_THRESHOLD = 10;       // mm change to trigger activity
-const unsigned long IDLE_TIMEOUT = 2000;   // ms until idle (note off)
+const int ACTIVITY_THRESHOLD = 5;       // mm change to trigger activity
+const unsigned long IDLE_TIMEOUT = 100;   // ms until idle (note off)
 const int ANIMATION_MIN_SPEED = 20;
 const int ANIMATION_MID_SPEED = 100;
 const int ANIMATION_MAX_SPEED = 250;
