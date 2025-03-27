@@ -80,6 +80,11 @@ int lastControlValB2 = 0;
 
 const int MIDI_CHANGE_THRESHOLD = 3;
 
+// --- Add these globals near your other parameters ---
+float smoothPotA = 0;
+float smoothPotB = 0;
+const float POT_SMOOTHING = 0.1; // Adjust between 0.0 (no update) and 1.0 (no smoothing)
+
 // ---------- MIDI Assignments ----------
 
 // Half A: potInputA, tofA1, tofA2; Half B: potInputB, tofB1, tofB2.
@@ -202,11 +207,19 @@ void loop() {
   controlValB2 = mapSensorToMIDI(distanceB2);
   updateSensorAnimation(3, distanceB2);
   
-  // --- Read Potentiometers ---
-  int potValA = map(analogRead(potInputA), 0, 1023, 0, 127);
-  int potValB = map(analogRead(potInputB), 0, 1023, 0, 127);
-  int potLedA = map(analogRead(potInputA), 0, 1023, 0, LED_COUNT_RING - 1);
-  int potLedB = map(analogRead(potInputB), 0, 1023, 0, LED_COUNT_RING - 1);
+  // --- Read Potentiometers with smoothing ---
+  int rawPotA = analogRead(potInputA);
+  int rawPotB = analogRead(potInputB);
+
+  // Exponential moving average smoothing
+  smoothPotA = (1.0 - POT_SMOOTHING) * smoothPotA + POT_SMOOTHING * rawPotA;
+  smoothPotB = (1.0 - POT_SMOOTHING) * smoothPotB + POT_SMOOTHING * rawPotB;
+
+  // Map the smooth values to MIDI and LED indices
+  int potValA = map(smoothPotA, 0, 1023, 0, 127);
+  int potValB = map(smoothPotB, 0, 1023, 0, 127);
+  int potLedA = map(smoothPotA, 0, 1023, 0, LED_COUNT_RING - 1);
+  int potLedB = map(smoothPotB, 0, 1023, 0, LED_COUNT_RING - 1);
   
   // --- Determine active state per half ---  
   // Half A is active if either tofA1 or tofA2 is active.
@@ -361,28 +374,36 @@ void loop() {
 // ---------- Animation Functions ----------
 
 void updateSensorAnimation(int sensorIndex, int distance) {
-  int distanceChange = abs(distance - prevDistance[sensorIndex]);
-  prevDistance[sensorIndex] = distance;
+  // If the sensor reading is above our maximum distance,
+  // immediately force this sensor into idle.
+  if (distance > SENSOR_MAX_DISTANCE) {
+    isActive[sensorIndex] = false;
+    animationPhase[sensorIndex] += ANIMATION_MIN_SPEED / 2;
+    prevDistance[sensorIndex] = distance;
+    return;
+  }
   
-  if (distanceChange > 3) {  // High sensitivity
+  // Check if there is a significant change in distance
+  if (abs(distance - prevDistance[sensorIndex]) > ACTIVITY_THRESHOLD) {
     isActive[sensorIndex] = true;
     lastActivityTime[sensorIndex] = millis();
-    int thresholdDistance = 300; // Detection threshold at 300mm
-    int constrainedDistance = constrain(distance, SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE);
-    
-    if (constrainedDistance < thresholdDistance) {
-      animationSpeed[sensorIndex] = map(constrainedDistance, SENSOR_MIN_DISTANCE, thresholdDistance,
-                                        ANIMATION_MIN_SPEED, ANIMATION_MID_SPEED);
-    } else {
-      animationSpeed[sensorIndex] = map(constrainedDistance, thresholdDistance, SENSOR_MAX_DISTANCE,
-                                        ANIMATION_MID_SPEED, ANIMATION_MAX_SPEED);
-    }
   }
+  // Return to idle if no movement is detected within IDLE_TIMEOUT
   else if (isActive[sensorIndex] && (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT)) {
     isActive[sensorIndex] = false;
   }
   
-  animationPhase[sensorIndex] += isActive[sensorIndex] ? animationSpeed[sensorIndex] : ANIMATION_MIN_SPEED / 2;
+  // Map the animation speed directly from the sensor reading.
+  // A lower readout (closer object) yields a slower animation,
+  // while a higher readout (further away, but within our limit) yields a faster animation.
+  animationSpeed[sensorIndex] = map(distance,
+                                    SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE,
+                                    ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED);
+  
+  // Advance the animation phase. If not active, update at a slower idle rate.
+  animationPhase[sensorIndex] += isActive[sensorIndex] ? animationSpeed[sensorIndex] : (ANIMATION_MIN_SPEED / 2);
+  
+  prevDistance[sensorIndex] = distance;
 }
 
 void breatheAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat) {
