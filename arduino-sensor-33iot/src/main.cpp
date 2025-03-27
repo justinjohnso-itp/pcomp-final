@@ -236,7 +236,7 @@ void loop() {
   } else if (!activeA && noteActiveA) {
     noteOff(0, NOTE_A, 0);
     noteActiveA = false;
-    controlChange(0, 7, 0);    // CC 7: Note A off (always sent on channel 0)
+    controlChange(0, 7, 127);    // CC 7: Note A off (always sent on channel 0)
   }
   
   // Half B (note messages remain on MIDI channel 1,
@@ -248,7 +248,7 @@ void loop() {
   } else if (!activeB && noteActiveB) {
     noteOff(1, NOTE_B, 0);
     noteActiveB = false;
-    controlChange(0, 9, 0);    // CC 9: Note B off (sent on channel 0)
+    controlChange(0, 9, 127);    // CC 9: Note B off (sent on channel 0)
   }
   
   // --- MIDI: Send CC messages for potentiometers (always send) ---
