@@ -228,7 +228,7 @@ void loop() {
   bool activeB = isActive[2] || isActive[3];
   
   // --- MIDI: Send Note On/Off for each half ---
-  // Half A
+  // Half A (MIDI channel 0)
   if (activeA && !noteActiveA) {
     noteOn(0, NOTE_A, 127);
     noteActiveA = true;
@@ -236,12 +236,12 @@ void loop() {
     noteOff(0, NOTE_A, 0);
     noteActiveA = false;
   }
-  // Half B
+  // Half B (MIDI channel 1)
   if (activeB && !noteActiveB) {
-    noteOn(0, NOTE_B, 127);
+    noteOn(1, NOTE_B, 127);
     noteActiveB = true;
   } else if (!activeB && noteActiveB) {
-    noteOff(0, NOTE_B, 0);
+    noteOff(1, NOTE_B, 0);
     noteActiveB = false;
   }
   
@@ -263,15 +263,15 @@ void loop() {
   if (activeB) {
     if (abs(potValB - lastPotValB) > MIDI_CHANGE_THRESHOLD) {
       lastPotValB = potValB;
-      controlChange(0, CC_POT_B, potValB);
+      controlChange(1, CC_POT_B, potValB);
     }
     if (abs(controlValB1 - lastControlValB1) > MIDI_CHANGE_THRESHOLD) {
       lastControlValB1 = controlValB1;
-      controlChange(0, CC_SENSOR_B1, controlValB1);
+      controlChange(1, CC_SENSOR_B1, controlValB1);
     }
     if (abs(controlValB2 - lastControlValB2) > MIDI_CHANGE_THRESHOLD) {
       lastControlValB2 = controlValB2;
-      controlChange(0, CC_SENSOR_B2, controlValB2);
+      controlChange(1, CC_SENSOR_B2, controlValB2);
     }
   }
   
@@ -362,7 +362,7 @@ void loop() {
     Serial.print(potValB); Serial.print(",");
     Serial.print(distanceB1); Serial.print(",");
     Serial.print(controlValB1); Serial.print(",");
-    Serial.print(distanceB2); Serial.print(",");
+    Serial.print(distanceB2); Serial.println(",");
     Serial.println(controlValB2);
     
     lastDebug = millis();
