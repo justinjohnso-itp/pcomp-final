@@ -1,425 +1,393 @@
 #include <Arduino.h>
-#include <MIDIUSB.h>
 #include <Wire.h>
 #include <Adafruit_VL53L0X.h>
 #include <Adafruit_NeoPixel.h>
 
-// Update animation state based on sensor reading
+// Forward declarations for animation functions
 void updateSensorAnimation(int sensorIndex, int distance);
-
-// Breathe animation for idle state (slowly pulsing)
 void breatheAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat);
-
-// Wave animation for active state (chasing pattern based on animation phase)
 void waveAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat, uint16_t phase, int speed);
-
-// Time of Flight Sensors
 void setupSensor(Adafruit_VL53L0X &sensor, int xshutPin, uint8_t address);
 
-// Init Time of Flight
-Adafruit_VL53L0X sensor1, sensor2, sensor3, sensor4;
-#define XSHUT_1 17
-#define XSHUT_2 16
-#define XSHUT_3 20
-#define XSHUT_4 21
+// ---------- Hardware Definitions ----------
 
-// Init LEDs
-#define LED_PIN_POT1 7
-#define LED_PIN_SENSOR1A 4
-#define LED_PIN_SENSOR1B 5
-#define LED_PIN_POT2 6
-#define LED_PIN_SENSOR2A 2
-#define LED_PIN_SENSOR2B 3
+// ToF sensors (Half A and Half B)
+Adafruit_VL53L0X tofA1, tofA2, tofB1, tofB2;
+#define XSHUT_A1 17
+#define XSHUT_A2 16
+#define XSHUT_B1 20
+#define XSHUT_B2 21
+
+// LEDs for each half
+// Half A LEDs
+#define LED_PIN_POT_A      7
+#define LED_PIN_SENSOR_A1  4  // ToF sensor A1
+#define LED_PIN_SENSOR_A2  5  // ToF sensor A2
+// Half B LEDs
+#define LED_PIN_POT_B      6
+#define LED_PIN_SENSOR_B1  2  // ToF sensor B1
+#define LED_PIN_SENSOR_B2  3  // ToF sensor B2
 
 #define LED_COUNT_RING 24
-#define LED_COUNT_DOT 7
+#define LED_COUNT_DOT  7
 
-Adafruit_NeoPixel potRing1(LED_COUNT_RING, LED_PIN_POT1, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel potRing2(LED_COUNT_RING, LED_PIN_POT2, NEO_GRB + NEO_KHZ800);
+// LED strips for each half
+Adafruit_NeoPixel potRingA(LED_COUNT_RING, LED_PIN_POT_A, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorRingA1(LED_COUNT_RING, LED_PIN_SENSOR_A1, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorRingA2(LED_COUNT_RING, LED_PIN_SENSOR_A2, NEO_GRB + NEO_KHZ800);
 
-Adafruit_NeoPixel sensorRing1A(LED_COUNT_RING, LED_PIN_SENSOR1A, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel sensorRing1B(LED_COUNT_RING, LED_PIN_SENSOR1B, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel sensorDot2A(LED_COUNT_DOT, LED_PIN_SENSOR2A, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel sensorDot2B(LED_COUNT_DOT, LED_PIN_SENSOR2B, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel potRingB(LED_COUNT_RING, LED_PIN_POT_B, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorDotB1(LED_COUNT_DOT, LED_PIN_SENSOR_B1, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel sensorDotB2(LED_COUNT_DOT, LED_PIN_SENSOR_B2, NEO_GRB + NEO_KHZ800);
 
-int potInput1 = A0;
-int potInput2 = A1;
+// Analog inputs (potentiometers)
+int potInputA = A0;
+int potInputB = A1;
 
-// distance ranges (mm)
+// ---------- Parameters & State ----------
+
 const int SENSOR_MIN_DISTANCE = 50;
 const int SENSOR_MAX_DISTANCE = 1200;
 
-// Animation parameters
-const int ACTIVITY_THRESHOLD = 10; // mm change to trigger activity
-const unsigned long IDLE_TIMEOUT = 2000; // ms until idle animation
-const int ANIMATION_MIN_SPEED = 20; // Slowest animation speed (closer objects)
-const int ANIMATION_MID_SPEED = 100; // Medium animation speed (at threshold)
-const int ANIMATION_MAX_SPEED = 250; // Fastest animation speed (further objects)
-const uint8_t IDLE_BRIGHTNESS = 50; // Idle brightness level
-const uint8_t ACTIVE_BRIGHTNESS = 255; // Active brightness level
+const int ACTIVITY_THRESHOLD = 10;       // mm change to trigger activity
+const unsigned long IDLE_TIMEOUT = 2000;   // ms until idle (note off)
+const int ANIMATION_MIN_SPEED = 20;
+const int ANIMATION_MID_SPEED = 100;
+const int ANIMATION_MAX_SPEED = 250;
+const uint8_t IDLE_BRIGHTNESS = 50;
+const uint8_t ACTIVE_BRIGHTNESS = 255;
 
-// Animation variables
-unsigned long lastActivityTime[4] = {0, 0, 0, 0}; // Track when last activity was detected
-uint16_t animationPhase[4] = {0, 0, 0, 0}; // Animation phase for each sensor
-int animationSpeed[4] = {0, 0, 0, 0}; // Animation speed for each sensor
-bool isActive[4] = {false, false, false, false}; // Activity state for each sensor
-int prevDistance[4] = {0, 0, 0, 0}; // Previous distance readings
+// Animation state (per ToF sensor)
+unsigned long lastActivityTime[4] = {0, 0, 0, 0};
+uint16_t animationPhase[4] = {0, 0, 0, 0};
+int animationSpeed[4] = {0, 0, 0, 0};
+bool isActive[4] = {false, false, false, false};
+int prevDistance[4] = {0, 0, 0, 0};
 
-// control values
-int controlVal1 = 0;
-int controlVal2 = 0;
-int controlVal3 = 0;
-int controlVal4 = 0;
+// Processed control values (mapped from ToF sensor distances)
+int controlValA1 = 0;  // For tofA1 (Half A)
+int controlValA2 = 0;  // For tofA2 (Half A)
+int controlValB1 = 0;  // For tofB1 (Half B)
+int controlValB2 = 0;  // For tofB2 (Half B)
 
-// Last values
-int lastPotVal1 = 0;
-int lastPotVal2 = 0;
-int lastControlVal1 = 0;
-int lastControlVal2 = 0;
-int lastControlVal3 = 0;
-int lastControlVal4 = 0;
+// Last observed values for MIDI CC filtering
+int lastPotValA = 0;
+int lastPotValB = 0;
+int lastControlValA1 = 0;
+int lastControlValA2 = 0;
+int lastControlValB1 = 0;
+int lastControlValB2 = 0;
 
-// MIDI change threshold to reduce unnecessary transmissions
 const int MIDI_CHANGE_THRESHOLD = 3;
 
-// Time of Flight Sensors
+// ---------- MIDI Assignments ----------
+
+// Half A: potInputA, tofA1, tofA2; Half B: potInputB, tofB1, tofB2.
+const byte NOTE_A = 60; // Note for Half A (e.g., Middle C)
+const byte NOTE_B = 67; // Note for Half B (e.g., G4)
+
+// MIDI CC numbers (customize as needed)
+// Half A
+const byte CC_POT_A = 14;
+const byte CC_SENSOR_A1 = 10;
+const byte CC_SENSOR_A2 = 11;
+// Half B
+const byte CC_POT_B = 15;
+const byte CC_SENSOR_B1 = 12;
+const byte CC_SENSOR_B2 = 13;
+
+// Track current note state per half
+bool noteActiveA = false;
+bool noteActiveB = false;
+
+// ---------- Utility Functions ----------
+
 void setupSensor(Adafruit_VL53L0X &sensor, int xshutPin, uint8_t address) {
-    digitalWrite(xshutPin, HIGH);
-    delay(100);
-
-    if (!sensor.begin()) {  
-        Serial.print("Failed to initialize sensor at pin ");
-        Serial.println(xshutPin);
-        while (1);
-    }
-
-    sensor.setAddress(address);
-    Serial.print("Sensor initialized at 0x");
-    Serial.println(address, HEX);
+  digitalWrite(xshutPin, HIGH);
+  delay(100);
+  if (!sensor.begin()) {
+    Serial.print("Failed to initialize sensor at pin ");
+    Serial.println(xshutPin);
+    while (1);
+  }
+  sensor.setAddress(address);
+  Serial.print("Sensor initialized at 0x");
+  Serial.println(address, HEX);
 }
 
-// Map sensors to control values
-int mapSensorToMIDI (int distance) {
+int mapSensorToMIDI(int distance) {
   distance = constrain(distance, SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE);
-
   return map(distance, SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE, 0, 127);
 }
 
-// MIDI functions
+// --- Modified MIDI functions (send raw MIDI bytes over Serial) ---
+
 void noteOn(byte channel, byte pitch, byte velocity) {
-  midiEventPacket_t noteOn = {0x09, uint8_t(0x90 | channel), pitch, velocity};
-  MidiUSB.sendMIDI(noteOn);
+  Serial.write(0x90 | channel);
+  Serial.write(pitch);
+  Serial.write(velocity);
 }
 
 void noteOff(byte channel, byte pitch, byte velocity) {
-  midiEventPacket_t noteOff = {0x08, uint8_t(0x80 | channel), pitch, velocity};
-  MidiUSB.sendMIDI(noteOff);
+  Serial.write(0x80 | channel);
+  Serial.write(pitch);
+  Serial.write(velocity);
 }
 
 void controlChange(byte channel, byte control, byte value) {
-  midiEventPacket_t event = {0x0B, uint8_t(0xB0 | channel), control, value};
-  MidiUSB.sendMIDI(event);
+  Serial.write(0xB0 | channel);
+  Serial.write(control);
+  Serial.write(value);
 }
 
+// ---------- Setup ----------
 void setup() {
-  Serial.begin(115200);
+  // For raw MIDI output, typically MIDI baud rate is 31250.
+  Serial.begin(31250);
   Serial.println("Initializing...");
 
-  // LED setup
-  potRing1.begin();
-  potRing2.begin();
-  sensorRing1A.begin();
-  sensorRing1B.begin();
-  sensorDot2A.begin();
-  sensorDot2B.begin();
-
-  // Time of Flight Pins / Setup
-  pinMode(XSHUT_1, OUTPUT);
-  pinMode(XSHUT_2, OUTPUT);
-  pinMode(XSHUT_3, OUTPUT);
-  pinMode(XSHUT_4, OUTPUT);
-
-  digitalWrite(XSHUT_1, LOW);
-  digitalWrite(XSHUT_2, LOW);
-  digitalWrite(XSHUT_3, LOW);
-  digitalWrite(XSHUT_4, LOW);
+  // Initialize LED strips
+  potRingA.begin();
+  sensorRingA1.begin();
+  sensorRingA2.begin();
+  
+  potRingB.begin();
+  sensorDotB1.begin();
+  sensorDotB2.begin();
+  
+  // Setup ToF sensor pins
+  pinMode(XSHUT_A1, OUTPUT);
+  pinMode(XSHUT_A2, OUTPUT);
+  pinMode(XSHUT_B1, OUTPUT);
+  pinMode(XSHUT_B2, OUTPUT);
+  
+  // Ensure sensors are off during setup
+  digitalWrite(XSHUT_A1, LOW);
+  digitalWrite(XSHUT_A2, LOW);
+  digitalWrite(XSHUT_B1, LOW);
+  digitalWrite(XSHUT_B2, LOW);
   delay(10);
-
-  setupSensor(sensor1, XSHUT_1, 0x30);
-  setupSensor(sensor2, XSHUT_2, 0x31);
-  setupSensor(sensor3, XSHUT_3, 0x32);
-  setupSensor(sensor4, XSHUT_4, 0x33);
-
-
-  // Small startup delay - optional
+  
+  setupSensor(tofA1, XSHUT_A1, 0x30);
+  setupSensor(tofA2, XSHUT_A2, 0x31);
+  setupSensor(tofB1, XSHUT_B1, 0x32);
+  setupSensor(tofB2, XSHUT_B2, 0x33);
+  
+  // Small startup delay
   delay(100);
 }
 
-void loop() {  
-
-  // Time of Flight Measurement
+// ---------- Main Loop ----------
+void loop() {
   VL53L0X_RangingMeasurementData_t measure;
-    
-    sensor1.rangingTest(&measure, false);
-    int distance1 = measure.RangeMilliMeter;
-    controlVal1 = mapSensorToMIDI(distance1);
-    updateSensorAnimation(0, distance1);
-
-    sensor2.rangingTest(&measure, false);
-    int distance2 = measure.RangeMilliMeter;
-    controlVal2 = mapSensorToMIDI(distance2);
-    updateSensorAnimation(1, distance2);
-
-    sensor3.rangingTest(&measure, false);
-    int distance3 = measure.RangeMilliMeter;
-    controlVal3 = mapSensorToMIDI(distance3);
-    updateSensorAnimation(2, distance3);
-
-    sensor4.rangingTest(&measure, false);
-    int distance4 = measure.RangeMilliMeter;
-    controlVal4 = mapSensorToMIDI(distance4);
-    updateSensorAnimation(3, distance4);
   
-  // LED stuff
-  int potValMapped1 = map(analogRead(potInput1), 0, 1023, 0, LED_COUNT_RING-1);
-  int potValMapped2 = map(analogRead(potInput2), 0, 1023, 0, LED_COUNT_RING-1);
-
-  int potVal1 = map(analogRead(A0), 0, 1023, 0, 127);
-  int potVal2 = map(analogRead(A1), 0, 1023, 0, 127);
-
-  // Potentiometer 1 change detection
-  if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
-    lastPotVal1 = potVal1;
-    controlChange(0, 14, potVal1);
+  // --- Read ToF sensors for Half A and Half B ---
+  tofA1.rangingTest(&measure, false);
+  int distanceA1 = measure.RangeMilliMeter;
+  controlValA1 = mapSensorToMIDI(distanceA1);
+  updateSensorAnimation(0, distanceA1);
+  
+  tofA2.rangingTest(&measure, false);
+  int distanceA2 = measure.RangeMilliMeter;
+  controlValA2 = mapSensorToMIDI(distanceA2);
+  updateSensorAnimation(1, distanceA2);
+  
+  tofB1.rangingTest(&measure, false);
+  int distanceB1 = measure.RangeMilliMeter;
+  controlValB1 = mapSensorToMIDI(distanceB1);
+  updateSensorAnimation(2, distanceB1);
+  
+  tofB2.rangingTest(&measure, false);
+  int distanceB2 = measure.RangeMilliMeter;
+  controlValB2 = mapSensorToMIDI(distanceB2);
+  updateSensorAnimation(3, distanceB2);
+  
+  // --- Read Potentiometers ---
+  int potValA = map(analogRead(potInputA), 0, 1023, 0, 127);
+  int potValB = map(analogRead(potInputB), 0, 1023, 0, 127);
+  int potLedA = map(analogRead(potInputA), 0, 1023, 0, LED_COUNT_RING - 1);
+  int potLedB = map(analogRead(potInputB), 0, 1023, 0, LED_COUNT_RING - 1);
+  
+  // --- Determine active state per half ---  
+  // Half A is active if either tofA1 or tofA2 is active.
+  bool activeA = isActive[0] || isActive[1];
+  // Half B is active if either tofB1 or tofB2 is active.
+  bool activeB = isActive[2] || isActive[3];
+  
+  // --- MIDI: Send Note On/Off for each half ---
+  // Half A
+  if (activeA && !noteActiveA) {
+    noteOn(0, NOTE_A, 127);
+    noteActiveA = true;
+  } else if (!activeA && noteActiveA) {
+    noteOff(0, NOTE_A, 0);
+    noteActiveA = false;
   }
-
-  // Potentiometer 2 change detection
-  if (abs(potVal2 - lastPotVal2) > MIDI_CHANGE_THRESHOLD) {
-    lastPotVal2 = potVal2;
-    controlChange(0, 15, potVal2);
+  // Half B
+  if (activeB && !noteActiveB) {
+    noteOn(0, NOTE_B, 127);
+    noteActiveB = true;
+  } else if (!activeB && noteActiveB) {
+    noteOff(0, NOTE_B, 0);
+    noteActiveB = false;
   }
-
-  // Sensor 1 change detection
-  if (abs(controlVal1 - lastControlVal1) > MIDI_CHANGE_THRESHOLD) {
-    lastControlVal1 = controlVal1;
-    controlChange(0, 10, controlVal1);
+  
+  // --- MIDI: Send CC messages for active halves ---
+  if (activeA) {
+    if (abs(potValA - lastPotValA) > MIDI_CHANGE_THRESHOLD) {
+      lastPotValA = potValA;
+      controlChange(0, CC_POT_A, potValA);
+    }
+    if (abs(controlValA1 - lastControlValA1) > MIDI_CHANGE_THRESHOLD) {
+      lastControlValA1 = controlValA1;
+      controlChange(0, CC_SENSOR_A1, controlValA1);
+    }
+    if (abs(controlValA2 - lastControlValA2) > MIDI_CHANGE_THRESHOLD) {
+      lastControlValA2 = controlValA2;
+      controlChange(0, CC_SENSOR_A2, controlValA2);
+    }
   }
-
-  // Sensor 2 change detection
-  if (abs(controlVal2 - lastControlVal2) > MIDI_CHANGE_THRESHOLD) {
-    lastControlVal2 = controlVal2;
-    controlChange(0, 11, controlVal2);
+  if (activeB) {
+    if (abs(potValB - lastPotValB) > MIDI_CHANGE_THRESHOLD) {
+      lastPotValB = potValB;
+      controlChange(0, CC_POT_B, potValB);
+    }
+    if (abs(controlValB1 - lastControlValB1) > MIDI_CHANGE_THRESHOLD) {
+      lastControlValB1 = controlValB1;
+      controlChange(0, CC_SENSOR_B1, controlValB1);
+    }
+    if (abs(controlValB2 - lastControlValB2) > MIDI_CHANGE_THRESHOLD) {
+      lastControlValB2 = controlValB2;
+      controlChange(0, CC_SENSOR_B2, controlValB2);
+    }
   }
-
-  // Sensor 3 change detection
-  if (abs(controlVal3 - lastControlVal3) > MIDI_CHANGE_THRESHOLD) {
-    lastControlVal3 = controlVal3;
-    controlChange(0, 12, controlVal3);
-  }
-
-  // Sensor 4 change detection
-  if (abs(controlVal4 - lastControlVal4) > MIDI_CHANGE_THRESHOLD) {
-    lastControlVal4 = controlVal4;
-    controlChange(0, 13, controlVal4);
-  }
-
-  // Periodic MIDI flush to ensure messages are sent
-  static unsigned long lastFlushTime = 0;
-  if (millis() - lastFlushTime > 10) {  // Flush every 10ms
-    MidiUSB.flush();
-    lastFlushTime = millis();
-  }
-
+  
+  // --- (Optional) Flush Serial if desired ---
+// Serial.flush();
+  
+  // --- LED Updates ---
   // Clear all LED strips
-  potRing1.clear();
-  potRing2.clear();
-  sensorRing1A.clear();
-  sensorRing1B.clear();
-  sensorDot2A.clear();
-  sensorDot2B.clear();
-
-  // Potentiometer LED updates (keep existing behavior)
-  potRing1.fill(potRing1.ColorHSV(1000, 255, 100));
-  potRing2.fill(potRing2.ColorHSV(1000, 255, 100));
+  potRingA.clear();
+  sensorRingA1.clear();
+  sensorRingA2.clear();
   
-  potRing1.setPixelColor(potValMapped1-1, potRing1.ColorHSV(60, 130, 80));
-  potRing1.setPixelColor(potValMapped1, potRing1.ColorHSV(60, 130, 255));
-  potRing1.setPixelColor(potValMapped1+1, potRing1.ColorHSV(60, 130, 80));
-
-  potRing2.setPixelColor(potValMapped2-1, potRing2.ColorHSV(60, 130, 80));
-  potRing2.setPixelColor(potValMapped2, potRing2.ColorHSV(60, 130, 255));
-  potRing2.setPixelColor(potValMapped2+1, potRing2.ColorHSV(60, 130, 80));
-
-  // Sensor LED animations - map each ToF sensor to its dedicated LED
-
-  // ToF sensor 1 (index 0) = LED ring 1A
-  if (isActive[0]) {
-    waveAnimation(sensorRing1A, 0, 255, animationPhase[0], animationSpeed[0]); // Red color
+  potRingB.clear();
+  sensorDotB1.clear();
+  sensorDotB2.clear();
+  
+  // Potentiometer LED feedback (static style)
+  potRingA.fill(potRingA.ColorHSV(1000, 255, 100));
+  potRingB.fill(potRingB.ColorHSV(1000, 255, 100));
+  potRingA.setPixelColor(potLedA - 1, potRingA.ColorHSV(60, 130, 80));
+  potRingA.setPixelColor(potLedA,     potRingA.ColorHSV(60, 130, 255));
+  potRingA.setPixelColor(potLedA + 1, potRingA.ColorHSV(60, 130, 80));
+  
+  potRingB.setPixelColor(potLedB - 1, potRingB.ColorHSV(60, 130, 80));
+  potRingB.setPixelColor(potLedB,     potRingB.ColorHSV(60, 130, 255));
+  potRingB.setPixelColor(potLedB + 1, potRingB.ColorHSV(60, 130, 80));
+  
+  // LED Animations (ToF sensors)
+  // Half A: tofA1 controls sensorRingA1; tofA2 controls sensorRingA2.
+  if (isActive[0]) { 
+    waveAnimation(sensorRingA1, 0, 255, animationPhase[0], animationSpeed[0]);
   } else {
-    breatheAnimation(sensorRing1A, 0, 255); // Red color
+    breatheAnimation(sensorRingA1, 0, 255);
   }
-
-  // ToF sensor 2 (index 1) = LED ring 1B
   if (isActive[1]) {
-    waveAnimation(sensorRing1B, 0, 255, animationPhase[1], animationSpeed[1]); // Red color
+    waveAnimation(sensorRingA2, 0, 255, animationPhase[1], animationSpeed[1]);
   } else {
-    breatheAnimation(sensorRing1B, 0, 255); // Red color
+    breatheAnimation(sensorRingA2, 0, 255);
   }
-
-  // ToF sensor 3 (index 2) = LED dot 2A
+  // Half B: tofB1 controls sensorDotB1; tofB2 controls sensorDotB2.
   if (isActive[2]) {
-    waveAnimation(sensorDot2A, 43690, 255, animationPhase[2], animationSpeed[2]); // Purple color
+    waveAnimation(sensorDotB1, 43690, 255, animationPhase[2], animationSpeed[2]);
   } else {
-    breatheAnimation(sensorDot2A, 43690, 255); // Purple color
+    breatheAnimation(sensorDotB1, 43690, 255);
   }
-
-  // ToF sensor 4 (index 3) = LED dot 2B
   if (isActive[3]) {
-    waveAnimation(sensorDot2B, 43690, 255, animationPhase[3], animationSpeed[3]); // Purple color
+    waveAnimation(sensorDotB2, 43690, 255, animationPhase[3], animationSpeed[3]);
   } else {
-    breatheAnimation(sensorDot2B, 43690, 255); // Purple color
+    breatheAnimation(sensorDotB2, 43690, 255);
   }
-
-  // Note: Sensors 3 and 4 don't have dedicated LEDs in the current setup
-  // You can add more LED animations if you connect additional LED strips
-
-  // Write all LED changes
-  potRing1.show();
-  potRing2.show();
-  sensorRing1A.show();
-  sensorRing1B.show();
-  sensorDot2A.show();
-  sensorDot2B.show();
-
-  // Comprehensive formatted debug output
-  static unsigned long lastDebugTime = 0;
-  if (millis() - lastDebugTime > 100) {  // Update debug output every 500ms to avoid flooding serial
+  
+  // Write updates to LED strips
+  potRingA.show();
+  sensorRingA1.show();
+  sensorRingA2.show();
+  
+  potRingB.show();
+  sensorDotB1.show();
+  sensorDotB2.show();
+  
+  // --- Debug Output (optional) ---
+  static unsigned long lastDebug = 0;
+  if (millis() - lastDebug > 100) {
     Serial.println("\n===== THEREMIN CONTROLLER DEBUG =====");
-    
-    // Potentiometer readings
-    Serial.println("--- Potentiometers ---");
-    Serial.print("POT1 (A0): Raw: ");
-    Serial.print(analogRead(A0));
-    Serial.print(" | Mapped LED: ");
-    Serial.print(potValMapped1);
-    Serial.print(" | MIDI CC14: ");
-    Serial.println(potVal1);
-    
-    Serial.print("POT2 (A1): Raw: ");
-    Serial.print(analogRead(A1));
-    Serial.print(" | Mapped LED: ");
-    Serial.print(potValMapped2);
-    Serial.print(" | MIDI CC15: ");
-    Serial.println(potVal2);
-    
-    // Time of Flight sensors
-    Serial.println("--- Time of Flight Sensors ---");
-    Serial.print("SENSOR1: Raw: ");
-    Serial.print(distance1);
-    Serial.print(" mm | MIDI CC10: ");
-    Serial.println(controlVal1);
-    
-    Serial.print("SENSOR2: Raw: ");
-    Serial.print(distance2);
-    Serial.print(" mm | MIDI CC11: ");
-    Serial.println(controlVal2);
-    
-    Serial.print("SENSOR3: Raw: ");
-    Serial.print(distance3);
-    Serial.print(" mm | MIDI CC12: ");
-    Serial.println(controlVal3);
-    
-    Serial.print("SENSOR4: Raw: ");
-    Serial.print(distance4);
-    Serial.print(" mm | MIDI CC13: ");
-    Serial.println(controlVal4);
-    
-    Serial.println("==================================");
-    
-    lastDebugTime = millis();
+    Serial.println("--- Half A ---");
+    Serial.print("POT_A: ");
+    Serial.print(potValA);
+    Serial.print(" | TOF_A1: ");
+    Serial.print(controlValA1);
+    Serial.print(" | TOF_A2: ");
+    Serial.println(controlValA2);
+    Serial.println("--- Half B ---");
+    Serial.print("POT_B: ");
+    Serial.print(potValB);
+    Serial.print(" | TOF_B1: ");
+    Serial.print(controlValB1);
+    Serial.print(" | TOF_B2: ");
+    Serial.println(controlValB2);
+    lastDebug = millis();
   }
-
-  // Small delay to prevent overwhelming the MIDI bus
+  
   delay(1);
 }
 
-// Update animation state based on sensor reading
+// ---------- Animation Functions ----------
+
 void updateSensorAnimation(int sensorIndex, int distance) {
-  // Calculate absolute change in distance
   int distanceChange = abs(distance - prevDistance[sensorIndex]);
   prevDistance[sensorIndex] = distance;
   
-  // Check if there's significant movement (using much more sensitive threshold)
-  if (distanceChange > 3) { // Reduced from 10 to 3 for higher sensitivity
-    // Activity detected, update state
+  if (distanceChange > 3) {  // High sensitivity
     isActive[sensorIndex] = true;
     lastActivityTime[sensorIndex] = millis();
-    
-    // Map distance to animation speed with detection threshold at 300mm
-    // If distance is less than 300mm, it's close/calm, otherwise it's far/intense
-    int thresholdDistance = 300; // New detection threshold at 300mm
-    
-    // Constrain distance first
+    int thresholdDistance = 300; // Detection threshold at 300mm
     int constrainedDistance = constrain(distance, SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE);
     
-    // If distance is below threshold, map to slower animations (close = calm)
-    // If distance is above threshold, map to faster animations (far = intense)
     if (constrainedDistance < thresholdDistance) {
-      // Below threshold - map from MIN_SPEED to MID_SPEED
-      animationSpeed[sensorIndex] = map(constrainedDistance, 
-                                      SENSOR_MIN_DISTANCE, thresholdDistance,
-                                      ANIMATION_MIN_SPEED, ANIMATION_MID_SPEED);
+      animationSpeed[sensorIndex] = map(constrainedDistance, SENSOR_MIN_DISTANCE, thresholdDistance,
+                                        ANIMATION_MIN_SPEED, ANIMATION_MID_SPEED);
     } else {
-      // Above threshold - map from MID_SPEED to MAX_SPEED
-      animationSpeed[sensorIndex] = map(constrainedDistance, 
-                                      thresholdDistance, SENSOR_MAX_DISTANCE,
-                                      ANIMATION_MID_SPEED, ANIMATION_MAX_SPEED);
+      animationSpeed[sensorIndex] = map(constrainedDistance, thresholdDistance, SENSOR_MAX_DISTANCE,
+                                        ANIMATION_MID_SPEED, ANIMATION_MAX_SPEED);
     }
-  } 
-  // Check if we should switch to idle mode - reduce timeout for faster response
-  else if (isActive[sensorIndex] && 
-          (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT)) {
+  }
+  else if (isActive[sensorIndex] && (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT)) {
     isActive[sensorIndex] = false;
   }
   
-  // Always increment animation phase - use larger increments for more obvious movement
-  animationPhase[sensorIndex] += isActive[sensorIndex] ? 
-                              animationSpeed[sensorIndex] : ANIMATION_MIN_SPEED/2;
+  animationPhase[sensorIndex] += isActive[sensorIndex] ? animationSpeed[sensorIndex] : ANIMATION_MIN_SPEED / 2;
 }
 
-// Breathe animation for idle state (slowly pulsing)
 void breatheAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat) {
-  // Create breathing effect with sine wave
   float breath = (sin(millis() / 2000.0 * PI) + 1.0) / 2.0;
-  uint8_t brightness = IDLE_BRIGHTNESS * breath + IDLE_BRIGHTNESS/2;
-  
-  // Apply to all pixels
-  for(int i=0; i < strip.numPixels(); i++) {
+  uint8_t brightness = IDLE_BRIGHTNESS * breath + IDLE_BRIGHTNESS / 2;
+  for (int i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, strip.ColorHSV(hue, sat, brightness));
   }
 }
 
-// Wave animation for active state (chasing pattern based on animation phase)
 void waveAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat, uint16_t phase, int speed) {
   int numPixels = strip.numPixels();
-  
-  // Calculate brightness based on speed (higher speed = more intense color)
-  uint8_t maxBrightness = map(speed, ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED, 
-                           ACTIVE_BRIGHTNESS/2, ACTIVE_BRIGHTNESS);
-                           
-  // Calculate intensity falloff based on speed (faster = sharper waves)
+  uint8_t maxBrightness = map(speed, ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED,
+                              ACTIVE_BRIGHTNESS / 2, ACTIVE_BRIGHTNESS);
   int falloff = map(speed, ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED, 2, 4);
-  
-  // Create wave pattern
-  for(int i=0; i < numPixels; i++) {
-    // Calculate wave position with wraparound
-    float wavePos = (i + (phase / 100.0)) / (float)numPixels;
-    wavePos = wavePos - floor(wavePos);  // Keep between 0-1
-    
-    // Create sine wave brightness
+  for (int i = 0; i < numPixels; i++) {
+    float wavePos = (i + (phase / 100.0)) / float(numPixels);
+    wavePos -= floor(wavePos);
     float wave = (sin(wavePos * 2 * PI * falloff) + 1.0) / 2.0;
     uint8_t brightness = wave * maxBrightness;
-    
     strip.setPixelColor(i, strip.ColorHSV(hue, sat, brightness));
   }
 }
