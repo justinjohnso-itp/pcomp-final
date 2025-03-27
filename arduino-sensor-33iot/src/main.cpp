@@ -83,13 +83,13 @@ const int MIDI_CHANGE_THRESHOLD = 3;
 // --- Add these globals near your other parameters ---
 float smoothPotA = 0;
 float smoothPotB = 0;
-const float POT_SMOOTHING = 0.1; // Adjust between 0.0 (no update) and 1.0 (no smoothing)
+const float POT_SMOOTHING = 0.8; // Adjust between 0.0 (no update) and 1.0 (no smoothing)
 
 // ---------- MIDI Assignments ----------
 
 // Half A: potInputA, tofA1, tofA2; Half B: potInputB, tofB1, tofB2.
-const byte NOTE_A = 60; // Note for Half A (e.g., Middle C)
-const byte NOTE_B = 67; // Note for Half B (e.g., G4)
+const byte NOTE_A = 48; // Note for Half A (C3)
+const byte NOTE_B = 36; // Note for Half B (C2)
 
 // MIDI CC numbers (customize as needed)
 // Half A
