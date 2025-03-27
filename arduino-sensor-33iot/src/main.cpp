@@ -319,27 +319,42 @@ void loop() {
   sensorDotB1.show();
   sensorDotB2.show();
   
-  // --- Debug Output (optional) ---
+  // --- Debug Output (compatible with Teleplot) ---
+  /*
   static unsigned long lastDebug = 0;
   if (millis() - lastDebug > 100) {
+    // Human-readable debug output (optional)
     Serial.println("\n===== THEREMIN CONTROLLER DEBUG =====");
     Serial.println("--- Half A ---");
-    Serial.print("POT_A: ");
-    Serial.print(potValA);
-    Serial.print(" | TOF_A1: ");
-    Serial.print(controlValA1);
-    Serial.print(" | TOF_A2: ");
-    Serial.println(controlValA2);
+    Serial.print("POT_A: "); Serial.print(potValA);
+    Serial.print(" | RAW_TOF_A1: "); Serial.print(distanceA1);
+    Serial.print(" | MIDI_TOF_A1: "); Serial.print(controlValA1);
+    Serial.print(" | RAW_TOF_A2: "); Serial.print(distanceA2);
+    Serial.print(" | MIDI_TOF_A2: "); Serial.println(controlValA2);
     Serial.println("--- Half B ---");
-    Serial.print("POT_B: ");
-    Serial.print(potValB);
-    Serial.print(" | TOF_B1: ");
-    Serial.print(controlValB1);
-    Serial.print(" | TOF_B2: ");
+    Serial.print("POT_B: "); Serial.print(potValB);
+    Serial.print(" | RAW_TOF_B1: "); Serial.print(distanceB1);
+    Serial.print(" | MIDI_TOF_B1: "); Serial.print(controlValB1);
+    Serial.print(" | RAW_TOF_B2: "); Serial.print(distanceB2);
+    Serial.print(" | MIDI_TOF_B2: "); Serial.println(controlValB2);
+    
+    // Teleplot-compatible CSV output:
+    // Format: teleplot,<potA>,<rawA1>,<MIDI_A1>,<rawA2>,<MIDI_A2>,<potB>,<rawB1>,<MIDI_B1>,<rawB2>,<MIDI_B2>
+    Serial.print("teleplot,");
+    Serial.print(potValA); Serial.print(",");
+    Serial.print(distanceA1); Serial.print(",");
+    Serial.print(controlValA1); Serial.print(",");
+    Serial.print(distanceA2); Serial.print(",");
+    Serial.print(controlValA2); Serial.print(",");
+    Serial.print(potValB); Serial.print(",");
+    Serial.print(distanceB1); Serial.print(",");
+    Serial.print(controlValB1); Serial.print(",");
+    Serial.print(distanceB2); Serial.print(",");
     Serial.println(controlValB2);
+    
     lastDebug = millis();
   }
-  
+  */
   delay(1);
 }
 
