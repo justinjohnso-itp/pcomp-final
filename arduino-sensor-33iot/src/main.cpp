@@ -88,8 +88,8 @@ const float POT_SMOOTHING = 0.8; // Adjust between 0.0 (no update) and 1.0 (no s
 // ---------- MIDI Assignments ----------
 
 // Half A: potInputA, tofA1, tofA2; Half B: potInputB, tofB1, tofB2.
-const byte NOTE_A = 48; // Note for Half A (C3)
-const byte NOTE_B = 36; // Note for Half B (C2)
+const byte NOTE_A = 60; // Note for Half A (C3)
+const byte NOTE_B = 60; // Note for Half B (C2)
 
 // MIDI CC numbers (customize as needed)
 // Half A
@@ -227,52 +227,56 @@ void loop() {
   // Half B is active if either tofB1 or tofB2 is active.
   bool activeB = isActive[2] || isActive[3];
   
-  // --- MIDI: Send Note On/Off for each half ---
+  // --- MIDI: Send Note On/Off and additional CC messages for each half ---
   // Half A (MIDI channel 0)
   if (activeA && !noteActiveA) {
     noteOn(0, NOTE_A, 127);
     noteActiveA = true;
+    controlChange(0, 6, 127);  // CC 6: Note A on (always sent on channel 0)
   } else if (!activeA && noteActiveA) {
     noteOff(0, NOTE_A, 0);
     noteActiveA = false;
+    controlChange(0, 7, 0);    // CC 7: Note A off (always sent on channel 0)
   }
-  // Half B (MIDI channel 1)
+  
+  // Half B (note messages remain on MIDI channel 1,
+  // but CC messages will be sent on channel 0)
   if (activeB && !noteActiveB) {
     noteOn(1, NOTE_B, 127);
     noteActiveB = true;
+    controlChange(0, 8, 127);  // CC 8: Note B on (sent on channel 0)
   } else if (!activeB && noteActiveB) {
     noteOff(1, NOTE_B, 0);
     noteActiveB = false;
+    controlChange(0, 9, 0);    // CC 9: Note B off (sent on channel 0)
   }
   
-  // --- MIDI: Send CC messages for active halves ---
-  if (activeA) {
-    if (abs(potValA - lastPotValA) > MIDI_CHANGE_THRESHOLD) {
-      lastPotValA = potValA;
-      controlChange(0, CC_POT_A, potValA);
-    }
-    if (abs(controlValA1 - lastControlValA1) > MIDI_CHANGE_THRESHOLD) {
-      lastControlValA1 = controlValA1;
-      controlChange(0, CC_SENSOR_A1, controlValA1);
-    }
-    if (abs(controlValA2 - lastControlValA2) > MIDI_CHANGE_THRESHOLD) {
-      lastControlValA2 = controlValA2;
-      controlChange(0, CC_SENSOR_A2, controlValA2);
-    }
+  // --- MIDI: Send CC messages for potentiometers (always send) ---
+  if (abs(potValA - lastPotValA) > MIDI_CHANGE_THRESHOLD) {
+    lastPotValA = potValA;
+    controlChange(0, CC_POT_A, potValA);
   }
-  if (activeB) {
-    if (abs(potValB - lastPotValB) > MIDI_CHANGE_THRESHOLD) {
-      lastPotValB = potValB;
-      controlChange(1, CC_POT_B, potValB);
-    }
-    if (abs(controlValB1 - lastControlValB1) > MIDI_CHANGE_THRESHOLD) {
-      lastControlValB1 = controlValB1;
-      controlChange(1, CC_SENSOR_B1, controlValB1);
-    }
-    if (abs(controlValB2 - lastControlValB2) > MIDI_CHANGE_THRESHOLD) {
-      lastControlValB2 = controlValB2;
-      controlChange(1, CC_SENSOR_B2, controlValB2);
-    }
+  if (abs(potValB - lastPotValB) > MIDI_CHANGE_THRESHOLD) {
+    lastPotValB = potValB;
+    controlChange(0, CC_POT_B, potValB);
+  }
+  
+  // --- MIDI: Send CC messages for sensor values (always on channel 0) ---
+  if (abs(controlValA1 - lastControlValA1) > MIDI_CHANGE_THRESHOLD) {
+    lastControlValA1 = controlValA1;
+    controlChange(0, CC_SENSOR_A1, controlValA1);
+  }
+  if (abs(controlValA2 - lastControlValA2) > MIDI_CHANGE_THRESHOLD) {
+    lastControlValA2 = controlValA2;
+    controlChange(0, CC_SENSOR_A2, controlValA2);
+  }
+  if (abs(controlValB1 - lastControlValB1) > MIDI_CHANGE_THRESHOLD) {
+    lastControlValB1 = controlValB1;
+    controlChange(0, CC_SENSOR_B1, controlValB1);
+  }
+  if (abs(controlValB2 - lastControlValB2) > MIDI_CHANGE_THRESHOLD) {
+    lastControlValB2 = controlValB2;
+    controlChange(0, CC_SENSOR_B2, controlValB2);
   }
   
   // --- (Optional) Flush Serial if desired ---
@@ -374,33 +378,31 @@ void loop() {
 // ---------- Animation Functions ----------
 
 void updateSensorAnimation(int sensorIndex, int distance) {
-  // If the sensor reading is above our maximum distance,
-  // immediately force this sensor into idle.
-  if (distance > SENSOR_MAX_DISTANCE) {
-    isActive[sensorIndex] = false;
-    animationPhase[sensorIndex] += ANIMATION_MIN_SPEED / 2;
-    prevDistance[sensorIndex] = distance;
-    return;
+  // If the sensor reading indicates something is present
+  if (distance < SENSOR_MAX_DISTANCE) {
+    // Always mark as active if below max—even if there's no change.
+    isActive[sensorIndex] = true;
+    lastActivityTime[sensorIndex] = millis();
+  } else {
+    // If the sensor reads its default max value, then check for idle timeout.
+    if (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT) {
+      isActive[sensorIndex] = false;
+    }
   }
   
-  // Check if there is a significant change in distance
+  // Additionally, if there is a significant change in the sensor reading,
+  // treat the sensor as active and update the last activity time.
   if (abs(distance - prevDistance[sensorIndex]) > ACTIVITY_THRESHOLD) {
     isActive[sensorIndex] = true;
     lastActivityTime[sensorIndex] = millis();
   }
-  // Return to idle if no movement is detected within IDLE_TIMEOUT
-  else if (isActive[sensorIndex] && (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT)) {
-    isActive[sensorIndex] = false;
-  }
   
   // Map the animation speed directly from the sensor reading.
-  // A lower readout (closer object) yields a slower animation,
-  // while a higher readout (further away, but within our limit) yields a faster animation.
-  animationSpeed[sensorIndex] = map(distance,
-                                    SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE,
+  // A lower (closer) reading gives a slower animation, and a further reading gives a faster animation.
+  animationSpeed[sensorIndex] = map(distance, SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE,
                                     ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED);
   
-  // Advance the animation phase. If not active, update at a slower idle rate.
+  // Advance the animation phase. If inactive, use a slow idle rate.
   animationPhase[sensorIndex] += isActive[sensorIndex] ? animationSpeed[sensorIndex] : (ANIMATION_MIN_SPEED / 2);
   
   prevDistance[sensorIndex] = distance;
