@@ -146,31 +146,14 @@ void loop() {
 
     sensor4.rangingTest(&measure, false);
     int distance4 = measure.RangeMilliMeter;
-    controlVal4 = mapSensorToMIDI(distance3);
+    controlVal4 = mapSensorToMIDI(distance4);
   
   // LED stuff
   int potValMapped1 = map(analogRead(potInput1), 0, 1023, 0, LED_COUNT_RING-1);
   int potValMapped2 = map(analogRead(potInput2), 0, 1023, 0, LED_COUNT_RING-1);
 
-  Serial.print(">potValMapped1:");
-  Serial.println(potValMapped1);
-
-  Serial.print(">potValMapped2:");
-  Serial.println(potValMapped2);
-
   int potVal1 = map(analogRead(A0), 0, 1023, 0, 127);
   int potVal2 = map(analogRead(A1), 0, 1023, 0, 127);
-
-  Serial.print(">potVal1:");
-  Serial.println(potVal1);
-
-  Serial.print(">potVal2:");
-  Serial.println(potVal2);
-
-  Serial.print("Sensor 1: "); Serial.println(distance1);
-  Serial.print("Sensor 2: "); Serial.println(distance2);
-  Serial.print("Sensor 3: "); Serial.println(distance3);
-  Serial.print("Sensor 4: "); Serial.println(distance4);
 
   // Potentiometer 1 change detection
   if (abs(potVal1 - lastPotVal1) > MIDI_CHANGE_THRESHOLD) {
@@ -245,19 +228,53 @@ void loop() {
   sensorDot2A.show();
   sensorDot2B.show();
 
-  // Debug output
-  Serial.print(", Pot1: ");
-  Serial.print(potVal1);
-  Serial.print(", Pot2: ");
-  Serial.print(potVal2);
-  Serial.print(", Sensor 1: ");
-  Serial.print(controlVal1);
-  Serial.print(", Sensor 2: ");
-  Serial.print(controlVal2);
-  Serial.print(", Sensor 3: ");
-  Serial.print(controlVal3);
-  Serial.print(", Sensor 4: ");
-  Serial.println(controlVal4);
+  // Comprehensive formatted debug output
+  static unsigned long lastDebugTime = 0;
+  if (millis() - lastDebugTime > 100) {  // Update debug output every 500ms to avoid flooding serial
+    Serial.println("\n===== THEREMIN CONTROLLER DEBUG =====");
+    
+    // Potentiometer readings
+    Serial.println("--- Potentiometers ---");
+    Serial.print("POT1 (A0): Raw: ");
+    Serial.print(analogRead(A0));
+    Serial.print(" | Mapped LED: ");
+    Serial.print(potValMapped1);
+    Serial.print(" | MIDI CC14: ");
+    Serial.println(potVal1);
+    
+    Serial.print("POT2 (A1): Raw: ");
+    Serial.print(analogRead(A1));
+    Serial.print(" | Mapped LED: ");
+    Serial.print(potValMapped2);
+    Serial.print(" | MIDI CC15: ");
+    Serial.println(potVal2);
+    
+    // Time of Flight sensors
+    Serial.println("--- Time of Flight Sensors ---");
+    Serial.print("SENSOR1: Raw: ");
+    Serial.print(distance1);
+    Serial.print(" mm | MIDI CC10: ");
+    Serial.println(controlVal1);
+    
+    Serial.print("SENSOR2: Raw: ");
+    Serial.print(distance2);
+    Serial.print(" mm | MIDI CC11: ");
+    Serial.println(controlVal2);
+    
+    Serial.print("SENSOR3: Raw: ");
+    Serial.print(distance3);
+    Serial.print(" mm | MIDI CC12: ");
+    Serial.println(controlVal3);
+    
+    Serial.print("SENSOR4: Raw: ");
+    Serial.print(distance4);
+    Serial.print(" mm | MIDI CC13: ");
+    Serial.println(controlVal4);
+    
+    Serial.println("==================================");
+    
+    lastDebugTime = millis();
+  }
 
   // Small delay to prevent overwhelming the MIDI bus
   delay(1);
