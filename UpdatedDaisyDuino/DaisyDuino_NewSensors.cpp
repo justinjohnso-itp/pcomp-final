@@ -3,13 +3,19 @@
 #include <SparkFun_VL53L5CX_Library.h>
 #include <Adafruit_NeoPixel.h>
 
+#define TCAADDR 0x70   // I2C address of TCA9548A multiplexer
+
 // Daisy
 DaisyHardware hardware;
 
 // VL53L5CX - need to update pins for Daisy
-SparkFun_VL53L5CX myImager;
-VL53L5CX_ResultsData measurementData; // result data class structure, 1356 bytes of RAM
+SparkFun_VL53L5CX sensors[6];  // Array of 6 sensors
+VL53L5CX_ResultsData measurementData[6]; // Array of measurement data
 
+// Define sensor channels on multiplexer
+const uint8_t SENSOR_CHANNELS[6] = {0, 1, 2, 3, 4, 5};  // Channels for A1, A2, A3, B1, B2, B3
+
+// Sensor resolution
 int imageResolution = 0;
 int imageWidth = 0;
 
@@ -27,15 +33,15 @@ int imageWidth = 0;
 
 #define LED_PIN_SENSOR_B1 2
 #define LED_PIN_SENSOR_B2 3
-#define LED_PIN_SENSOR_B3 4  // Fix: was incorrectly defined as B2
+#define LED_PIN_SENSOR_B3 4
 
 // Animation Constants
 #define LED_COUNT_RING 24
 
 // Distance Constants
 const int SENSOR_MIN_DISTANCE = 50;    // 1m min range
-const int SENSOR_MAX_DISTANCE = 200;    // 4m max range
-const int ACTIVITY_THRESHOLD = 5;       // mm change to trigger activity
+const int SENSOR_MAX_DISTANCE = 200;   // 4m max range
+const int ACTIVITY_THRESHOLD = 5;      // mm change to trigger activity
 
 // Timing Constants
 const unsigned long IDLE_TIMEOUT = 100;   // ms until idle
@@ -59,17 +65,41 @@ Adafruit_NeoPixel sensorRingB1(LED_COUNT_RING, LED_PIN_SENSOR_B1, NEO_GRB + NEO_
 Adafruit_NeoPixel sensorRingB2(LED_COUNT_RING, LED_PIN_SENSOR_B2, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel sensorRingB3(LED_COUNT_RING, LED_PIN_SENSOR_B3, NEO_GRB + NEO_KHZ800);
 
+// LED Ring Mappings
+Adafruit_NeoPixel* sensorRings[6] = {
+    &sensorRingA1, &sensorRingA2, &sensorRingA3,
+    &sensorRingB1, &sensorRingB2, &sensorRingB3
+};
+
+// Hue values for each side
+const uint16_t SIDE_HUES[2] = {
+    0,      // Side A - Red
+    43690   // Side B - Blue
+};
+
 // Foward declarations for animation
 void updateSensorAnimation(int sensorIndex, int distance);
 void breatheAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat);
 void waveAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat, uint16_t phase, int speed);
 
-// Animation state (per VL53L5CX)
-unsigned long lastActivityTime[4] = {0, 0, 0, 0};
-uint16_t animationPhase[4] = {0, 0, 0, 0};
-int animationSpeed[4] = {0, 0, 0, 0};
-bool isActive[4] = {false, false, false, false};
-int prevDistance[4] = {0, 0, 0, 0};
+// Animation state (per sensor)
+unsigned long lastActivityTime[6] = {0, 0, 0, 0, 0, 0};
+uint16_t animationPhase[6] = {0, 0, 0, 0, 0, 0};
+int animationSpeed[6] = {0, 0, 0, 0, 0, 0};
+bool isActive[6] = {false, false, false, false, false, false};
+int prevDistance[6] = {0, 0, 0, 0, 0, 0};
+
+// helper function for multiplexer control
+void tcaselect(uint8_t channel) {
+    if (channel > 7) return;
+
+    Wire.beginTransmission(TCAADDR);
+    Wire.write(1 << channel);
+    if (Wire.endTransmission() != 0) {
+        Serial.print("Error: Failed to select TCA channel ");
+        Serial.println(channel);
+    }
+}
 
 void setup() {
     // Initialize Serial for debugging
@@ -78,7 +108,7 @@ void setup() {
 
     // Initialize I2C
     Wire.begin();
-    Wire.setClock(400000); // Set I2C clock to 400kHz
+    Wire.setClock(400000);
 
     // Initialize LED rings
     sensorRingA1.begin();
@@ -88,125 +118,110 @@ void setup() {
     sensorRingB2.begin();
     sensorRingB3.begin();
 
-    // Initialize VL53L5CX sensor
-    Serial.println("Initializing VL53L5CX...");
-    if (myImager.begin() == false) {
-        Serial.println(F("Sensor not found - check wiring."));
-        while(1); // Halt if sensor not found
+    // Initialize each sensor through multiplexer
+    for (int i = 0; i < 6; i++) {
+        tcaselect(SENSOR_CHANNELS[i]);
+        delay(10);  // Give multiplexer time to switch
+        
+        Serial.print("Initializing sensor ");
+        Serial.print(i);
+        Serial.print(" on channel ");
+        Serial.println(SENSOR_CHANNELS[i]);
+        
+        if (!sensors[i].begin()) {
+            Serial.print("Sensor ");
+            Serial.print(i);
+            Serial.println(" not found - check wiring!");
+            while(1);
+        }
+
+        // Configure each sensor
+        sensors[i].setResolution(64);
+        sensors[i].setRangingFrequency(15);
+        sensors[i].setRangingMode(SF_VL53L5CX_RANGING_MODE_CONTINUOUS);
+        sensors[i].setIntegrationTime(40);
+        sensors[i].startRanging();
     }
-
-    // Configure VL53L5CX
-    myImager.setResolution(64);        // 8x8 resolution
-    myImager.setRangingFrequency(15);  // 15Hz update rate
-    
-    // Optional but recommended settings
-    myImager.setRangingMode(SF_VL53L5CX_RANGING_MODE_CONTINUOUS);
-    myImager.setIntegrationTime(40);   // Integration time in ms
-    
-    // Get resolution for processing
-    imageResolution = myImager.getResolution();
-    imageWidth = sqrt(imageResolution);
-
-    // Start ranging
-    myImager.startRanging();
 
     Serial.println("Setup complete!");
 }
 
 void loop() {
-    if (myImager.isDataReady() == true) {
-        if (myImager.getRangingData(&measurementData)) {
-            // Clear all LEDs before updates
-            clearAllLEDs();
-            
-            // The VL53L5CX returns an 8x8 array of distance measurements
-            // We can access specific zones for different areas
-            
-            // Example mapping of zones to our sensors:
-            int distanceA1 = measurementData.distance_mm[0];  // Top left zone
-            int distanceA2 = measurementData.distance_mm[7];  // Top right zone
-            int distanceB1 = measurementData.distance_mm[56]; // Bottom left zone
-            int distanceB2 = measurementData.distance_mm[63]; // Bottom right zone
-            
-            // Update animations based on distances
-            updateSensorAnimation(0, distanceA1);
-            updateSensorAnimation(1, distanceA2);
-            updateSensorAnimation(2, distanceB1);
-            updateSensorAnimation(3, distanceB2);
+    bool newData = false;
 
-            // LED Animations (ToF sensors)
-            // Half A: tofA1 controls sensorRingA1; tofA2 controls sensorRingA2.
-            if (isActive[0]) { 
-                waveAnimation(sensorRingA1, 0, 255, animationPhase[0], animationSpeed[0]);
-            } else {
-                breatheAnimation(sensorRingA1, 0, 255);
-            }
-            if (isActive[1]) {
-                waveAnimation(sensorRingA2, 0, 255, animationPhase[1], animationSpeed[1]);
-            } else {
-                breatheAnimation(sensorRingA2, 0, 255);
-            }
-            // Half B: tofB1 controls sensorDotB1; tofB2 controls sensorDotB2.
-            if (isActive[2]) {
-                waveAnimation(sensorDotB1, 43690, 255, animationPhase[2], animationSpeed[2]);
-            } else {
-                breatheAnimation(sensorDotB1, 43690, 255);
-            }
-            if (isActive[3]) {
-                waveAnimation(sensorDotB2, 43690, 255, animationPhase[3], animationSpeed[3]);
-            } else {
-                breatheAnimation(sensorDotB2, 43690, 255);
-            }
+    // Check all sensors
+    for (int i = 0; i < 6; i++) {
+        tcaselect(SENSOR_CHANNELS[i]);
 
-            // Update all LEDs at once
-            updateAllLEDs();
+        if (sensors[i].isDataReady()) {
+            if (sensors[i].getRangingData(&measurementData[i])) {
+                newData = true;
+                int centerZone = measurementData[i].distance_mm[35];
+                updateSensorAnimation(i, centerZone);
+            }
         }
     }
+
+    // If we got new data from any sensor, update animations
+    if (newData) {
+        clearAllLEDs();
+
+        for (int i = 0; i < 6; i++) {
+            uint16_t hue = SIDE_HUES[i >= 3 ? 1 : 0]; // Use blue for side B (indices 3-5)
+
+            if (isActive[i]) {
+                waveAnimation(*sensorRings[i], hue, 255, animationPhase[i], animationSpeed[i]);
+            } else {
+                breatheAnimation(*sensorRings[i], hue, 255);
+            }
+        }
+
+        updateAllLEDs();
+    }
+
     delay(1);
 }
 
 // LED Animation Functions
 
 void updateSensorAnimation(int sensorIndex, int distance) {
-    // If the sensor reading indicates something is present
+    // Check if the sensor reading indicates something is present
     if (distance < SENSOR_MAX_DISTANCE) {
-      // Always mark as active if below max—even if there's no change.
-      isActive[sensorIndex] = true;
-      lastActivityTime[sensorIndex] = millis();
+        isActive[sensorIndex] = true;
+        lastActivityTime[sensorIndex] = millis();
     } else {
-      // If the sensor reads its default max value, then check for idle timeout.
-      if (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT) {
-        isActive[sensorIndex] = false;
-      }
+        // If the sensor reads its default max value, check for idle timeout
+        if (millis() - lastActivityTime[sensorIndex] > IDLE_TIMEOUT) {
+            isActive[sensorIndex] = false;
+        }
     }
-    
-    // Additionally, if there is a significant change in the sensor reading,
-    // treat the sensor as active and update the last activity time.
+
+    // If there is a significant change in the sensor reading, mark as active
     if (abs(distance - prevDistance[sensorIndex]) > ACTIVITY_THRESHOLD) {
-      isActive[sensorIndex] = true;
-      lastActivityTime[sensorIndex] = millis();
+        isActive[sensorIndex] = true;
+        lastActivityTime[sensorIndex] = millis();
     }
-    
-    // Map the animation speed directly from the sensor reading.
-    // A lower (closer) reading gives a slower animation, and a further reading gives a faster animation.
+
+    // Map the animation speed based on the sensor reading
     animationSpeed[sensorIndex] = map(distance, SENSOR_MIN_DISTANCE, SENSOR_MAX_DISTANCE,
                                       ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED);
-    
-    // Advance the animation phase. If inactive, use a slow idle rate.
+
+    // Advance the animation phase
     animationPhase[sensorIndex] += isActive[sensorIndex] ? animationSpeed[sensorIndex] : (ANIMATION_MIN_SPEED / 2);
-    
+
+    // Store the previous distance
     prevDistance[sensorIndex] = distance;
-  }
-  
-  void breatheAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat) {
+}
+
+void breatheAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat) {
     float breath = (sin(millis() / 2000.0 * PI) + 1.0) / 2.0;
     uint8_t brightness = IDLE_BRIGHTNESS * breath + IDLE_BRIGHTNESS / 2;
     for (int i = 0; i < strip.numPixels(); i++) {
       strip.setPixelColor(i, strip.ColorHSV(hue, sat, brightness));
     }
-  }
-  
-  void waveAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat, uint16_t phase, int speed) {
+}
+
+void waveAnimation(Adafruit_NeoPixel &strip, uint16_t hue, uint8_t sat, uint16_t phase, int speed) {
     int numPixels = strip.numPixels();
     uint8_t maxBrightness = map(speed, ANIMATION_MIN_SPEED, ANIMATION_MAX_SPEED,
                                 ACTIVE_BRIGHTNESS / 2, ACTIVE_BRIGHTNESS);
@@ -218,26 +233,18 @@ void updateSensorAnimation(int sensorIndex, int distance) {
       uint8_t brightness = wave * maxBrightness;
       strip.setPixelColor(i, strip.ColorHSV(hue, sat, brightness));
     }
-  }
+}
 
 // LED Helper Functions
 
-  void updateAllLEDs() {
-    // Update all LED rings
-    sensorRingA1.show();
-    sensorRingA2.show();
-    sensorRingA3.show();
-    sensorRingB1.show();
-    sensorRingB2.show();
-    sensorRingB3.show();
+void updateAllLEDs() {
+    for (int i = 0; i < 6; i++) {
+        sensorRings[i]->show();
+    }
 }
 
 void clearAllLEDs() {
-    // Clear all LED rings
-    sensorRingA1.clear();
-    sensorRingA2.clear();
-    sensorRingA3.clear();
-    sensorRingB1.clear();
-    sensorRingB2.clear();
-    sensorRingB3.clear();
+    for (int i = 0; i < 6; i++) {
+        sensorRings[i]->clear();
+    }
 }
